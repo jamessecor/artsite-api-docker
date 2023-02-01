@@ -10,9 +10,6 @@ services:
    - CONNECTIONSTRING=mongodb://mongo:27017/art
   volumes:
    - ./:/app
-   - type: bind
-     source: ./
-     target: /app 
   command: npm run debug
 
  mongo:
