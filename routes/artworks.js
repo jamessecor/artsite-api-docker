@@ -1,5 +1,5 @@
 const { MongoClient } = require('mongodb');
-const client = new MongoClient(process.env.CONNECTIONSTRING);
+const client = new MongoClient(process.env.DB_CONNECTIONSTRING);
 
 const artworksCollection = 'artworks';
 
