@@ -12,7 +12,7 @@ app.use(express.json());
 app.use(express.static('public'));
 
 app.get("/api/status", (req, res) => {
-    res.status(200).send({ message: process.env.DB_CONNECTIONSTRING }) // TODO: remove this env var
+    res.status(200).send({ message: "running ok" })
 });
 
 // Artworks
