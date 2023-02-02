@@ -15,6 +15,11 @@ app.get("/api/status", (req, res) => {
     res.status(200).send({ message: "running ok" })
 });
 
+app.use((req, res, next) => {
+    req.setTimeout(0);
+    next();
+})
+
 // Artworks
 app.get('/api/artworks', artworkRoutes.find);
 app.delete('/api/artworks', artworkRoutes.delete);
