@@ -47,5 +47,5 @@ exports.find = (async (req, res) => {
         result = await collection.find().toArray();
     }
 
-    res.status(200).send({ results: result });
+    res.status(200).send({ results: JSON.stringify(result) });
 });
