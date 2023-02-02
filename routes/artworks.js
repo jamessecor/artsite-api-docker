@@ -50,6 +50,6 @@ exports.find = (async (req, res) => {
 
         res.status(200).send({ results: JSON.stringify(result) });
     } catch (err) {
-        res.status(400).send({ error: err });
+        res.status(400).send({ error: err, message: err.message });
     }
 });
