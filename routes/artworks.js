@@ -32,20 +32,24 @@ exports.delete = (async (req, res) => {
 });
 
 exports.find = (async (req, res) => {
-    await client.connect();
-    const db = client.db(process.env.DB_NAME);
-    const collection = db.collection(artworksCollection);
+    try {
+        await client.connect();
+        const db = client.db(process.env.DB_NAME);
+        const collection = db.collection(artworksCollection);
 
-    let result = [];
-    const query = req.body ? req.body.s : null;
-    if (query) {
-        const queryRegex = new RegExp(query, "i");
-        result = await collection.find({
-            $or: [{ media: { $regex: queryRegex } }, { price: { $regex: queryRegex } }, { title: { $regex: queryRegex } }]
-        }).toArray();
-    } else {
-        result = await collection.find().toArray();
+        let result = [];
+        const query = req.body ? req.body.s : null;
+        if (query) {
+            const queryRegex = new RegExp(query, "i");
+            result = await collection.find({
+                $or: [{ media: { $regex: queryRegex } }, { price: { $regex: queryRegex } }, { title: { $regex: queryRegex } }]
+            }).toArray();
+        } else {
+            result = await collection.find().toArray();
+        }
+
+        res.status(200).send({ results: JSON.stringify(result) });
+    } catch (err) {
+        res.status(400).send({ error: err });
     }
-
-    res.status(200).send({ results: JSON.stringify(result) });
 });
