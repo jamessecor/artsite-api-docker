@@ -1,4 +1,4 @@
-FROM node:12.18.1 as base
+FROM node:12.18.1
 
 ENV NODE_ENV=production
 
@@ -12,9 +12,7 @@ COPY . .
 
 RUN npm run build
 
-ADD ./dist .
-
-FROM base as production
+COPY dist .
 
 EXPOSE 8080
 
