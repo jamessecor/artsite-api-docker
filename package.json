@@ -2,22 +2,32 @@
   "name": "mongo-docker",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js",
-    "debug": "nodemon --inspect=0.0.0.0:9229 server.js"
+    "prebuild": "tslint -c tslint.json -p tsconfig.json --fix",
+    "build": "tsc",
+    "prestart": "npm run build",
+    "start": "node .",
+    "dev": "concurrently \"npx tsc --watch\" \"nodemon dist/index.js\"",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "devDependencies": {
+    "@types/express": "^4.17.17",
+    "@types/node": "^18.13.0",
+    "nodemon": "^2.0.20",
+    "typescript": "^4.9.5"
+  },
   "dependencies": {
     "@emailjs/nodejs": "^2.1.1",
+    "@types/cors": "^2.8.13",
+    "concurrently": "^7.6.0",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
     "mongodb": "^4.13.0",
-    "nodemailer": "^6.9.1",
-    "nodemon": "^2.0.20"
+    "tslint": "^6.1.3"
   }
 }
