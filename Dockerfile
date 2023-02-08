@@ -12,8 +12,6 @@ COPY . .
 
 RUN npm run build
 
-COPY dist .
-
 EXPOSE 8080
 
-CMD [ "node", "." ]
+CMD [ "node", "dist/index.js" ]
