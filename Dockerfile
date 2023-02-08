@@ -12,7 +12,7 @@ COPY . .
 
 RUN npm run build
 
-COPY ./dist .
+ADD ./dist .
 
 FROM base as production
 
