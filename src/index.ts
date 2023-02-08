@@ -5,6 +5,7 @@ import express from 'express';
 import cors from 'cors';
 import * as artworkRoutes from './routes/artworks';
 import * as emailRoutes from './routes/email';
+import * as userRoutes from './routes/users';
 
 
 const app = express();
@@ -23,6 +24,7 @@ app.use((req, res, next) => {
     next();
 })
 
+userRoutes.register(app);
 artworkRoutes.register(app);
 emailRoutes.register(app);
 

@@ -1,6 +1,6 @@
 import express from 'express';
+import { authenticateRequest } from '../models/authentication';
 import { MongoClient } from 'mongodb';
-const client = new MongoClient(process.env.DB_CONNECTIONSTRING ?? '');
 
 const artworksCollection = 'artworks';
 
@@ -10,14 +10,19 @@ export const register = (app: express.Application) => {
             next();
         } else {
             // Authenticate Request
-            // TODO: remove next()
-            next();
-            // res.status(401).send();
+            const isAuthed = authenticateRequest(req.headers['authorization'] ?? '');
+
+            if (isAuthed) {
+                next();
+            } else {
+                res.status(401).send();
+            }
         }
     });
 
     app.get('/api/artworks', async (req, res) => {
         try {
+            const client = new MongoClient(process.env.DB_CONNECTIONSTRING ?? '');
             await client.connect();
             const db = client.db(process.env.DB_NAME);
             const collection = db.collection(artworksCollection);
@@ -44,30 +49,48 @@ export const register = (app: express.Application) => {
     });
 
     app.post('/api/artworks', async (req, res, next) => {
-        await client.connect();
-        const db = client.db(process.env.DB_NAME);
-        const collection = db.collection(artworksCollection);
-
-        const insert = await collection.insertMany(req.body);
-
-        if (insert) {
-            res.status(200).send({ message: "inserted successfully" });
-        } else {
-            res.status(400).send({ message: 'failed to insert' });
+        try {
+            const client = new MongoClient(process.env.DB_CONNECTIONSTRING ?? '');
+            await client.connect();
+            const db = client.db(process.env.DB_NAME);
+            const collection = db.collection(artworksCollection);
+    
+            const insert = await collection.insertMany(req.body);
+    
+            if (insert) {
+                res.status(200).send({ message: "inserted successfully" });
+            } else {
+                res.status(400).send({ message: 'failed to insert' });
+            }
+        } catch (err) {
+            let message = 'unknown error';
+            if (err instanceof Error) {
+                message = err.message;
+            }
+            res.status(400).send({ error: err, message });
         }
     });
 
     app.delete('/api/artworks', async (req, res) => {
-        await client.connect();
-        const db = client.db(process.env.DB_NAME);
-        const collection = db.collection(artworksCollection);
-
-        const remove = await collection.deleteMany(req.body);
-
-        if (remove) {
-            res.status(200).send({ message: "deleted successfully" });
-        } else {
-            res.status(400).send({ message: 'failed to delete' });
+        try {
+            const client = new MongoClient(process.env.DB_CONNECTIONSTRING ?? '');
+            await client.connect();
+            const db = client.db(process.env.DB_NAME);
+            const collection = db.collection(artworksCollection);
+    
+            const remove = await collection.deleteMany(req.body);
+    
+            if (remove) {
+                res.status(200).send({ message: "deleted successfully" });
+            } else {
+                res.status(400).send({ message: 'failed to delete' });
+            }
+        } catch (err) {
+            let message = 'unknown error';
+            if (err instanceof Error) {
+                message = err.message;
+            }
+            res.status(400).send({ error: err, message });
         }
     });
 }
