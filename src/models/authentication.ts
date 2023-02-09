@@ -24,5 +24,3 @@ export const authenticateRequest = ((token: string) => {
         return false;
     }
 });
-
-export const getHashedPassword = async (password: string, saltCount = 10) => bcrypt.hash(password, saltCount);
