@@ -2,7 +2,6 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 
 export const signIn = (async (username: string, password: string) => {
-    console.log(username, password, process.env.API_PASSWORD_HASH, process.env.API_USERNAME);
     if (!(username && password)) {
         return false;
     }
@@ -10,7 +9,7 @@ export const signIn = (async (username: string, password: string) => {
     const passwordCompareResult = await bcrypt.compare(password, process.env.API_PASSWORD_HASH);
 
     if (passwordCompareResult) {
-        return jwt.sign({ username: username, password: password }, process.env.JWT_SECRET, { expiresIn: '1800s' });
+        return jwt.sign({ username: username }, process.env.JWT_SECRET, { expiresIn: '1800s' });
     }
     
     return false;
