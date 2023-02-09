@@ -9,7 +9,6 @@ export const register = (app: express.Application) => {
         if (req.method.toString() === 'GET') {
             next();
         } else {
-            // Authenticate Request
             const isAuthed = authenticateRequest(req.headers['authorization'] ?? '');
 
             if (isAuthed) {
@@ -48,7 +47,7 @@ export const register = (app: express.Application) => {
         }
     });
 
-    app.post('/api/artworks', async (req, res, next) => {
+    app.post('/api/artworks', async (req, res) => {
         try {
             const client = new MongoClient(process.env.DB_CONNECTIONSTRING ?? '');
             await client.connect();

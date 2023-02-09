@@ -5,6 +5,7 @@ import express from 'express';
 import cors from 'cors';
 import * as artworkRoutes from './routes/artworks';
 import * as emailRoutes from './routes/email';
+import * as passwordRoutes from './routes/passwords';
 import * as userRoutes from './routes/users';
 
 
@@ -24,9 +25,10 @@ app.use((req, res, next) => {
     next();
 })
 
-userRoutes.register(app);
 artworkRoutes.register(app);
 emailRoutes.register(app);
+passwordRoutes.register(app);
+userRoutes.register(app);
 
 // start the Express server
 app.listen(process.env.SERVER_PORT);

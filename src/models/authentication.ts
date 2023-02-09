@@ -1,17 +1,19 @@
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
 
-export const signIn = ((username: string, password: string) => {
+export const signIn = (async (username: string, password: string) => {
     console.log(username, password, process.env.API_PASSWORD_HASH, process.env.API_USERNAME);
     if (!(username && password)) {
         return false;
     }
 
-    const passwordHash = password; // TODO: hash that password!
-    if (!(username === process.env.API_USERNAME && passwordHash === process.env.API_PASSWORD_HASH)) {
-        return false;
-    }
+    const passwordCompareResult = await bcrypt.compare(password, process.env.API_PASSWORD_HASH);
 
-    return jwt.sign({ username: username, password: password }, process.env.JWT_SECRET, { expiresIn: '1800s' });
+    if (passwordCompareResult) {
+        return jwt.sign({ username: username, password: password }, process.env.JWT_SECRET, { expiresIn: '1800s' });
+    }
+    
+    return false;
 });
 
 export const authenticateRequest = ((token: string) => {
@@ -23,3 +25,5 @@ export const authenticateRequest = ((token: string) => {
         return false;
     }
 });
+
+export const getHashedPassword = async (password: string, saltCount = 10) => bcrypt.hash(password, saltCount);

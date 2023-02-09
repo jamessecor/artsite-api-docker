@@ -2,11 +2,11 @@ import express from 'express';
 import { signIn } from '../models/authentication';
 
 export const register = (app: express.Application) => {
-    app.post('/api/users', (req, res, next) => {
+    app.post('/api/users', async (req, res) => {
         const username = req.body?.username ?? '';
         const password = req.body?.password ?? '';
         try {
-            const token = signIn(username, password);
+            const token = await signIn(username, password);
             if (token) {
                 res.status(200).send({ token: token });
             } else {
