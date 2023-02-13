@@ -12,8 +12,9 @@ export const uploadFile = async (filePath: string, destinationFilename: string) 
             }
         }
         catch (err) {
+            return false;
         }
     }
-    
+
     return false;
 }
