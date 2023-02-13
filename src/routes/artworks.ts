@@ -1,6 +1,7 @@
 import express from 'express';
 import { authenticateRequest } from '../models/authentication';
 import { MongoClient } from 'mongodb';
+import { uploadFile } from '../models/storage';
 
 const artworksCollection = 'artworks';
 
@@ -9,7 +10,7 @@ export const register = (app: express.Application) => {
         if (req.method.toString() === 'GET') {
             next();
         } else {
-            const isAuthed = authenticateRequest(req.headers['authorization'] ?? '');
+            const isAuthed = authenticateRequest(req.headers.authorization ?? '');
 
             if (isAuthed) {
                 next();
@@ -47,15 +48,31 @@ export const register = (app: express.Application) => {
         }
     });
 
+    app.post('/api/artworks/upload-image', async (req, res) => {
+        const filePath = req.body?.filePath as string;
+        const destinationFilename = req.body?.destinationFilename as string;
+
+        if (filePath && destinationFilename) {
+            const upload = await uploadFile(filePath, destinationFilename);
+            if (upload) {
+                res.status(202).send({ message: `Successfully uploaded ${filePath} to ${destinationFilename}` });
+            } else {
+                res.status(400).send({ message: `Unable to upload ${filePath} to ${destinationFilename}` });
+            }
+        } else {
+            res.status(404).send({ message: 'Request must specify filePath and destinationFilename' });
+        }
+    });
+
     app.post('/api/artworks', async (req, res) => {
         try {
             const client = new MongoClient(process.env.DB_CONNECTIONSTRING ?? '');
             await client.connect();
             const db = client.db(process.env.DB_NAME);
             const collection = db.collection(artworksCollection);
-    
+
             const insert = await collection.insertMany(req.body);
-    
+
             if (insert) {
                 res.status(200).send({ message: "inserted successfully" });
             } else {
@@ -76,9 +93,9 @@ export const register = (app: express.Application) => {
             await client.connect();
             const db = client.db(process.env.DB_NAME);
             const collection = db.collection(artworksCollection);
-    
+
             const remove = await collection.deleteMany(req.body);
-    
+
             if (remove) {
                 res.status(200).send({ message: "deleted successfully" });
             } else {

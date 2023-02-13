@@ -9,9 +9,9 @@ export const signIn = (async (username: string, password: string) => {
     const passwordCompareResult = await bcrypt.compare(password, process.env.API_PASSWORD_HASH);
 
     if (passwordCompareResult) {
-        return jwt.sign({ username: username }, process.env.JWT_SECRET, { expiresIn: '1800s' });
+        return jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: '1800s' });
     }
-    
+
     return false;
 });
 

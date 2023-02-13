@@ -8,7 +8,7 @@ export const register = (app: express.Application) => {
         try {
             const token = await signIn(username, password);
             if (token) {
-                res.status(200).send({ token: token });
+                res.status(200).send({ token });
             } else {
                 res.status(403).send({ message: 'invalid username or password' });
             }
