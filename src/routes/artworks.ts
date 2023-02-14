@@ -1,7 +1,6 @@
 import express from 'express';
 import { authenticateRequest } from '../models/authentication';
 import { MongoClient } from 'mongodb';
-import { uploadFile } from '../models/storage';
 
 const artworksCollection = 'artworks';
 
@@ -45,22 +44,6 @@ export const register = (app: express.Application) => {
                 message = err.message;
             }
             res.status(400).send({ error: err, message });
-        }
-    });
-
-    app.post('/api/artworks/upload-image', async (req, res) => {
-        const filePath = req.body?.filePath as string;
-        const destinationFilename = req.body?.destinationFilename as string;
-
-        if (filePath && destinationFilename) {
-            const upload = await uploadFile(filePath, destinationFilename);
-            if (upload) {
-                res.status(202).send({ message: `Successfully uploaded ${filePath} to ${destinationFilename}` });
-            } else {
-                res.status(400).send({ message: `Unable to upload ${filePath} to ${destinationFilename}` });
-            }
-        } else {
-            res.status(404).send({ message: 'Request must specify filePath and destinationFilename' });
         }
     });
 
