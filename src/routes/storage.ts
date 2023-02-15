@@ -45,7 +45,7 @@ export const register = (app: express.Application) => {
                     const publicUrl = format(
                         `https://storage.cloud.google.com/${bucket.name}/${blob.name}`
                     );
-                    res.status(200).send({ publicUrl: publicUrl });
+                    res.status(200).send({ publicUrl });
                 });
 
                 blobStream.end(req.file.buffer);
