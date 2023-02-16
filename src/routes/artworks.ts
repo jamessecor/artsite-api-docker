@@ -4,8 +4,9 @@ import Multer from 'multer';
 import { format } from 'util';
 import { authenticateRequest } from '../models/authentication';
 import { MongoClient, ObjectId } from 'mongodb';
+import { uploadImage } from '../models/storage';
 
-const artworksCollection = 'artworks';
+export const artworksCollection = 'artworks';
 
 export const register = (app: express.Application) => {
     const multer = Multer({
@@ -83,34 +84,8 @@ export const register = (app: express.Application) => {
     app.put('/api/artworks/:id', multer.single('file'), async (req, res, next) => {
         // Upload file
         if (req.file) {
-            
-            const storage = new Storage({ projectId: process.env.GOOGLE_PROJECT_ID });
-            const bucket = storage.bucket(process.env.GOOGLE_STORAGE_BUCKET_NAME);
-            if (bucket) {
-                try {
-                    // Create a new blob in the bucket and upload the file data.
-                    const blob = bucket.file(req.file.originalname);
-                    const blobStream = blob.createWriteStream();
-                    
-                    blobStream.on('error', err => {
-                        next(err);
-                    });
-                    
-                    blobStream.on('finish', () => {
-                        // The public URL can be used to directly access the file via HTTP.
-                        const publicUrl = format(
-                            `https://storage.cloud.google.com/${bucket.name}/${blob.name}`
-                        );
-                        req.body.image = publicUrl;
-                    });
-
-                    blobStream.end(req.file.buffer);
-                }
-                catch (err) {
-                    res.status(400).send(err.toString())
-                }
-            }
-
+            const fileUrl = await uploadImage(req.file);
+            req.body.image = fileUrl;
         }
 
         // Update data

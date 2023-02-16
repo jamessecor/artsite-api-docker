@@ -6,7 +6,6 @@ import cors from 'cors';
 import * as artworkRoutes from './routes/artworks';
 import * as emailRoutes from './routes/email';
 import * as passwordRoutes from './routes/passwords';
-import * as storageRoutes from './routes/storage';
 import * as userRoutes from './routes/users';
 
 
@@ -29,7 +28,6 @@ app.use((req, res, next) => {
 artworkRoutes.register(app);
 emailRoutes.register(app);
 passwordRoutes.register(app);
-storageRoutes.register(app);
 userRoutes.register(app);
 
 // start the Express server
