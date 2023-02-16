@@ -97,7 +97,10 @@ export const register = (app: express.Application) => {
 
             const update = await collection.updateOne({ _id: new ObjectId(req.params.id) }, { $set: req.body });
             if (update) {
-                res.status(200).send({ message: "updated successfully", artwork: req.body });
+                res.status(200).send({ 
+                    message: "updated successfully",
+                    image: req.body.image
+                });
             } else {
                 res.status(400).send({ message: 'failed to update' });
             }
