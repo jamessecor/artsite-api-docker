@@ -86,7 +86,8 @@ export const register = (app: express.Application) => {
             if (update) {
                 res.status(200).send({
                     message: "inserted successfully",
-                    image: req.body.image
+                    image: req.body.image,
+                    _id: update.insertedId
                 });
             } else {
                 res.status(400).send({ message: 'failed to insert' });
@@ -118,7 +119,8 @@ export const register = (app: express.Application) => {
             if (update) {
                 res.status(200).send({
                     message: "updated successfully",
-                    image: req.body.image
+                    image: req.body.image,
+                    _id: req.params.id
                 });
             } else {
                 res.status(400).send({ message: 'failed to update' });
