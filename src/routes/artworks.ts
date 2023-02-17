@@ -59,6 +59,11 @@ export const register = (app: express.Application) => {
 
     // inserts a new artwork
     app.post('/api/artworks', multer.single('file'), async (req, res) => {
+        if (!req.file) {
+            res.status(400).send({ message: 'bad request: no file present' });
+            return;
+        }
+
         const newArtwork = req.body;
         const artworkValidationResult = validateArtwork(newArtwork, true);
         if (artworkValidationResult) {
@@ -67,10 +72,8 @@ export const register = (app: express.Application) => {
         }
 
         // Upload file
-        if (req.file) {
-            const fileUrl = await uploadImage(req.file);
-            newArtwork.image = fileUrl;
-        }
+        const fileUrl = await uploadImage(req.file);
+        newArtwork.image = fileUrl;
 
         // Update data
         try {
