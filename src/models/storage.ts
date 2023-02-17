@@ -18,7 +18,7 @@ export const uploadImage = (file: Express.Multer.File) => new Promise((resolve, 
         blobStream.on('finish', () => {
             // The public URL can be used to directly access the file via HTTP.
             const publicUrl = format(
-                `https://storage.cloud.google.com/${bucket.name}/${blob.name}`
+                `https://storage.googleapis.com/${bucket.name}/${blob.name}`
             );
             resolve(publicUrl);
         });
