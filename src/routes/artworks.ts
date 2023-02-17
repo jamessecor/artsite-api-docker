@@ -1,10 +1,9 @@
 import express from 'express';
-import { Storage } from '@google-cloud/storage';
 import Multer from 'multer';
-import { format } from 'util';
 import { authenticateRequest } from '../models/authentication';
 import { MongoClient, ObjectId } from 'mongodb';
 import { uploadImage } from '../models/storage';
+import { IArtwork, validateArtwork } from '../models/artwork';
 
 export const artworksCollection = 'artworks';
 
@@ -58,17 +57,34 @@ export const register = (app: express.Application) => {
         }
     });
 
-    app.post('/api/artworks', async (req, res) => {
+    // inserts a new artwork
+    app.post('/api/artworks', multer.single('file'), async (req, res) => {
+        const newArtwork = req.body;
+        const artworkValidationResult = validateArtwork(newArtwork, true);
+        if (artworkValidationResult) {
+            res.status(400).send({ artworkValidationResult });
+            return;
+        }
+
+        // Upload file
+        if (req.file) {
+            const fileUrl = await uploadImage(req.file);
+            newArtwork.image = fileUrl;
+        }
+
+        // Update data
         try {
             const client = new MongoClient(process.env.DB_CONNECTIONSTRING ?? '');
             await client.connect();
             const db = client.db(process.env.DB_NAME);
             const collection = db.collection(artworksCollection);
 
-            const insert = await collection.insertMany(req.body);
-
-            if (insert) {
-                res.status(200).send({ message: "inserted successfully" });
+            const update = await collection.insertOne(newArtwork);
+            if (update) {
+                res.status(200).send({
+                    message: "inserted successfully",
+                    image: req.body.image
+                });
             } else {
                 res.status(400).send({ message: 'failed to insert' });
             }
@@ -97,7 +113,7 @@ export const register = (app: express.Application) => {
 
             const update = await collection.updateOne({ _id: new ObjectId(req.params.id) }, { $set: req.body });
             if (update) {
-                res.status(200).send({ 
+                res.status(200).send({
                     message: "updated successfully",
                     image: req.body.image
                 });
@@ -121,6 +137,29 @@ export const register = (app: express.Application) => {
             const collection = db.collection(artworksCollection);
 
             const remove = await collection.deleteMany(req.body);
+
+            if (remove) {
+                res.status(200).send({ message: "deleted successfully" });
+            } else {
+                res.status(400).send({ message: 'failed to delete' });
+            }
+        } catch (err) {
+            let message = 'unknown error';
+            if (err instanceof Error) {
+                message = err.message;
+            }
+            res.status(400).send({ error: err, message });
+        }
+    });
+
+    app.delete('/api/artworks/:id', async (req, res) => {
+        try {
+            const client = new MongoClient(process.env.DB_CONNECTIONSTRING ?? '');
+            await client.connect();
+            const db = client.db(process.env.DB_NAME);
+            const collection = db.collection(artworksCollection);
+
+            const remove = await collection.deleteOne({ _id: new ObjectId(req.params.id) });
 
             if (remove) {
                 res.status(200).send({ message: "deleted successfully" });
