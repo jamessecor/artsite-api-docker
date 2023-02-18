@@ -167,7 +167,10 @@ export const register = (app: express.Application) => {
             const remove = await collection.deleteOne({ _id: new ObjectId(req.params.id) });
 
             if (remove) {
-                res.status(200).send({ message: "deleted successfully" });
+                res.status(200).send({ 
+                    message: "deleted successfully",
+                    _id: req.params.id
+                });
             } else {
                 res.status(400).send({ message: 'failed to delete' });
             }
