@@ -118,12 +118,12 @@ export const register = (app: express.Application) => {
             const update = await collection.updateOne({ _id: new ObjectId(req.params.id) }, { $set: req.body });
             if (update) {
                 res.status(200).send({
-                    message: `updated ${req.params.title} successfully`,
+                    message: `updated ${req.body.title} successfully`,
                     image: req.body.image,
                     _id: req.params.id
                 });
             } else {
-                res.status(400).send({ message: `failed to update ${req.params.title}` });
+                res.status(400).send({ message: `failed to update ${req.body.title}` });
             }
         } catch (err) {
             let message = 'unknown error';
