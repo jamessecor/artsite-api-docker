@@ -38,6 +38,11 @@ export const register = (app: express.Application) => {
     });
 
     app.post("/api/front-email", async (req, res, next) => {
+        if (!req.body.email) {
+            res.status(400).send({ message: 'failed. must send email' });
+            return;
+        }
+
         const templateParams = {
             firstname: req.body.firstname,
             lastname: req.body.lastname,
