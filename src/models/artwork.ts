@@ -22,6 +22,10 @@ export const formatRequest = (body: IArtwork) => {
         body.isNFS = JSON.parse(body.isNFS);
     }
 
+    if (body.isHomePage) {
+        body.isHomePage = JSON.parse(body.isHomePage);
+    }
+
     if (body.arrangement) {
         body.arrangement = JSON.parse(body.arrangement);
     }
