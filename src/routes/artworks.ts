@@ -3,7 +3,7 @@ import Multer from 'multer';
 import { authenticateRequest } from '../models/authentication';
 import { MongoClient, ObjectId } from 'mongodb';
 import { uploadImage } from '../models/storage';
-import { IArtwork, validateArtwork } from '../models/artwork';
+import { IArtwork, formatRequest, validateArtwork } from '../models/artwork';
 
 export const artworksCollection = 'artworks';
 
@@ -82,7 +82,8 @@ export const register = (app: express.Application) => {
             const db = client.db(process.env.DB_NAME);
             const collection = db.collection(artworksCollection);
 
-            const update = await collection.insertOne(newArtwork);
+            const formattedNewArtwork = formatRequest(newArtwork);
+            const update = await collection.insertOne(formattedNewArtwork);
             if (update) {
                 res.status(200).send({
                     message: "inserted successfully",
@@ -114,16 +115,17 @@ export const register = (app: express.Application) => {
             await client.connect();
             const db = client.db(process.env.DB_NAME);
             const collection = db.collection(artworksCollection);
-
-            const update = await collection.updateOne({ _id: new ObjectId(req.params.id) }, { $set: req.body });
+         
+            const formattedRequest = formatRequest(req.body);
+            const update = await collection.updateOne({ _id: new ObjectId(req.params.id) }, { $set: formattedRequest });
             if (update) {
                 res.status(200).send({
-                    message: `updated ${req.body.title} successfully`,
-                    image: req.body.image,
+                    message: `updated ${formattedRequest.title} successfully`,
+                    image: formattedRequest.image,
                     _id: req.params.id
                 });
             } else {
-                res.status(400).send({ message: `failed to update ${req.body.title}` });
+                res.status(400).send({ message: `failed to update ${formattedRequest.title}` });
             }
         } catch (err) {
             let message = 'unknown error';
