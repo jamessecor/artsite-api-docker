@@ -115,7 +115,7 @@ export const register = (app: express.Application) => {
             const db = client.db(process.env.DB_NAME);
             const collection = db.collection(artworksCollection);
 
-            const update = await collection.updateOne({ _id: new ObjectId(req.params.id) }, { $set: req.body });
+            const update = await collection.updateOne({ _id: new ObjectId(req.params.id) }, { $set: JSON.stringify(req.body) });
             if (update) {
                 res.status(200).send({
                     message: "updated successfully",
