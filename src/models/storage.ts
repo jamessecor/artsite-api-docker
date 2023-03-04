@@ -9,7 +9,7 @@ export const uploadImage = (file: Express.Multer.File, title: string) => new Pro
 
         // Create a new blob in the bucket and upload the file data.
         const currentDate = new Date();
-        const blob = bucket.file(`${currentDate.getFullYear()}/${title.replace(/ /g, '_')}__${currentDate.toISOString()}.jpg`);
+        const blob = bucket.file(`${currentDate.getFullYear()}/${title.toLocaleLowerCase().replace(/ /g, '-')}_${currentDate.toISOString()}.jpg`);
         const blobStream = blob.createWriteStream();
 
         blobStream.on('error', err => {
