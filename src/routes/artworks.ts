@@ -72,7 +72,7 @@ export const register = (app: express.Application) => {
         }
 
         // Upload file
-        const fileUrl = await uploadImage(req.file);
+        const fileUrl = await uploadImage(req.file, req.body.title);
         newArtwork.image = fileUrl;
 
         // Update data
@@ -104,7 +104,7 @@ export const register = (app: express.Application) => {
     app.put('/api/artworks/:id', multer.single('file'), async (req, res, next) => {
         // Upload file
         if (req.file) {
-            const fileUrl = await uploadImage(req.file);
+            const fileUrl = await uploadImage(req.file, req.body.title);
             req.body.image = fileUrl;
         }
 
