@@ -3,9 +3,9 @@ import Multer from 'multer';
 import { authenticateRequest } from '../models/authentication';
 import { MongoClient, ObjectId } from 'mongodb';
 import { uploadImage } from '../models/storage';
-import { formatRequest, validateArtwork } from '../models/artwork';
+import { formatArtworksResponse, formatRequest, IArtworkResponse, validateArtwork } from '../models/artwork';
 
-export const artworksCollection = 'artworks';
+export const artworksCollection = 'test';
 
 export const register = (app: express.Application) => {
     const multer = Multer({
@@ -49,7 +49,7 @@ export const register = (app: express.Application) => {
                 result = await collection.find().toArray();
             }
 
-            res.status(200).send({ results: result });
+            res.status(200).send({ results: formatArtworksResponse(result as unknown as Array<IArtworkResponse>) });
         } catch (err) {
             let message = 'unknown error';
             if (err instanceof Error) {
