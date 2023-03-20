@@ -5,7 +5,7 @@ import { MongoClient, ObjectId } from 'mongodb';
 import { uploadImage } from '../models/storage';
 import { formatArtworksResponse, formatRequest, IArtworkResponse, validateArtwork } from '../models/artwork';
 
-export const artworksCollection = 'test';
+export const artworksCollection = 'artworks';
 
 export const register = (app: express.Application) => {
     const multer = Multer({
