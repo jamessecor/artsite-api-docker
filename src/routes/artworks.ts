@@ -3,7 +3,7 @@ import Multer from 'multer';
 import { authenticateRequest } from '../models/authentication';
 import { MongoClient, ObjectId } from 'mongodb';
 import { uploadImage } from '../models/storage';
-import { IArtwork, formatRequest, validateArtwork } from '../models/artwork';
+import { formatRequest, validateArtwork } from '../models/artwork';
 
 export const artworksCollection = 'artworks';
 
@@ -17,6 +17,8 @@ export const register = (app: express.Application) => {
 
     app.all('/api/artworks*', (req, res, next) => {
         if (req.method.toString() === 'GET') {
+            next();
+        } else if (/\/api\/artworks\/[0-9a-z]+\/likes/i.test(req.url)) {
             next();
         } else {
             const isAuthed = authenticateRequest(req.headers.authorization ?? '');
@@ -115,7 +117,7 @@ export const register = (app: express.Application) => {
             await client.connect();
             const db = client.db(process.env.DB_NAME);
             const collection = db.collection(artworksCollection);
-         
+
             const formattedRequest = formatRequest(req.body);
             const update = await collection.updateOne({ _id: new ObjectId(req.params.id) }, { $set: formattedRequest });
             if (update) {
@@ -126,6 +128,48 @@ export const register = (app: express.Application) => {
                 });
             } else {
                 res.status(400).send({ message: `failed to update ${formattedRequest.title}` });
+            }
+        } catch (err) {
+            let message = 'unknown error';
+            if (err instanceof Error) {
+                message = err.message;
+            }
+            res.status(400).send({ error: err, message });
+        }
+    });
+
+    // Update likes
+    app.put('/api/artworks/:id/likes', async (req, res) => {
+        console.log(req.body, req.url);
+        if (!(req.body.timestamp && req.body.amount)) {
+            res.status(400).send({ error: 'Missing timestamp or amount' });
+            return;
+        }
+        // Update artwork likes
+        try {
+            const client = new MongoClient(process.env.DB_CONNECTIONSTRING ?? '');
+            await client.connect();
+            const db = client.db(process.env.DB_NAME);
+            const collection = db.collection(artworksCollection);
+            const artwork = await collection.findOne({ _id: new ObjectId(req.params.id) });
+            
+            const likes = artwork.likes ?? [];            
+            const like = {
+                timestamp: req.body.timestamp,
+                amount: req.body.amount
+            };
+            const updatedLikes = [...likes, like];
+            
+            const update = await collection.updateOne({ _id: new ObjectId(req.params.id) }, { $set: { likes: updatedLikes } });
+            if (update) {
+                res.status(200).send({
+                    message: `updated ${artwork.title} successfully`,
+                    likes: updatedLikes,
+                    totalLikes: updatedLikes.reduce((partialSum, like) => partialSum + like.amount, 0),
+                    _id: req.params.id
+                });
+            } else {
+                res.status(400).send({ message: `failed to update ${artwork.title}` });
             }
         } catch (err) {
             let message = 'unknown error';
@@ -169,7 +213,7 @@ export const register = (app: express.Application) => {
             const remove = await collection.deleteOne({ _id: new ObjectId(req.params.id) });
 
             if (remove) {
-                res.status(200).send({ 
+                res.status(200).send({
                     message: "deleted successfully",
                     _id: req.params.id
                 });
