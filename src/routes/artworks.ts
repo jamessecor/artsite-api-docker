@@ -164,7 +164,7 @@ export const register = (app: express.Application) => {
                 res.status(200).send({
                     message: `updated ${artwork.title} successfully`,
                     likes: updatedLikes,
-                    totalLikes: updatedLikes.reduce((partialSum, like) => partialSum + like.amount, 0),
+                    totalLikes: updatedLikes.reduce((partialSum, thisLike) => partialSum + thisLike.amount, 0),
                     _id: req.params.id
                 });
             } else {
