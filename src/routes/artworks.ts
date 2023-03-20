@@ -140,7 +140,6 @@ export const register = (app: express.Application) => {
 
     // Update likes
     app.put('/api/artworks/:id/likes', async (req, res) => {
-        console.log(req.body, req.url);
         if (!(req.body.timestamp && req.body.amount)) {
             res.status(400).send({ error: 'Missing timestamp or amount' });
             return;
