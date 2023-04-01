@@ -10,6 +10,7 @@ export interface IArtwork {
     year: string;
     media: string;
     image: string;
+    thumbnail?: string;
     isHomePage?: string;
     price: string;
     arrangement?: string;

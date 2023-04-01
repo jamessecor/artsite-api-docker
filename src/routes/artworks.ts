@@ -2,10 +2,12 @@ import express from 'express';
 import Multer from 'multer';
 import { authenticateRequest } from '../models/authentication';
 import { MongoClient, ObjectId } from 'mongodb';
+import sharp from 'sharp';
 import { uploadImage } from '../models/storage';
 import { formatArtworksResponse, formatRequest, IArtworkResponse, validateArtwork } from '../models/artwork';
 
-export const artworksCollection = 'artworks';
+export const artworksCollection = process.env.TESTING ?? null ? 'test-upload' : 'artworks';
+const thumbnailSize = 200;
 
 export const register = (app: express.Application) => {
     const multer = Multer({
@@ -74,8 +76,13 @@ export const register = (app: express.Application) => {
         }
 
         // Upload file
-        const fileUrl = await uploadImage(req.file, req.body.title);
+        const { buffer } = req.file;
+        const fileUrl = await uploadImage(buffer, req.body.title);
         newArtwork.image = fileUrl;
+        // Upload thumbnail
+        const thumbnailFileBuffer = await sharp(buffer).resize(thumbnailSize).toBuffer();
+        const thumbnailFileUrl = await uploadImage(thumbnailFileBuffer, `${req.body.title}-thumbnail_${thumbnailSize}`)
+        newArtwork.thumbnail = thumbnailFileUrl;
 
         // Update data
         try {
@@ -89,7 +96,8 @@ export const register = (app: express.Application) => {
             if (update) {
                 res.status(200).send({
                     message: "inserted successfully",
-                    image: req.body.image,
+                    image: fileUrl,
+                    thumbnail: thumbnailFileUrl,
                     _id: update.insertedId
                 });
             } else {
@@ -107,8 +115,24 @@ export const register = (app: express.Application) => {
     app.put('/api/artworks/:id', multer.single('file'), async (req, res, next) => {
         // Upload file
         if (req.file) {
-            const fileUrl = await uploadImage(req.file, req.body.title);
-            req.body.image = fileUrl;
+            try {
+                const { buffer } = req.file;
+                const fileUrl = await uploadImage(buffer, req.body.title);
+                req.body.image = fileUrl;
+
+                // Upload thumbnail
+                const thumbnailFileBuffer = await sharp(buffer).resize(thumbnailSize).toBuffer();
+                const thumbnailFileUrl = await uploadImage(thumbnailFileBuffer, `${req.body.title}-thumbnail_${thumbnailSize}`)
+                req.body.thumbnail = thumbnailFileUrl;
+            }
+            catch (err) {
+                let message = 'unknown error';
+                if (err instanceof Error) {
+                    message = err.message;
+                }
+                res.status(400).send({ error: err, message });
+                return;
+            }
         }
 
         // Update data
@@ -124,6 +148,7 @@ export const register = (app: express.Application) => {
                 res.status(200).send({
                     message: `updated ${formattedRequest.title} successfully`,
                     image: formattedRequest.image,
+                    thumbnail: formattedRequest.thumbnail,
                     _id: req.params.id
                 });
             } else {
