@@ -115,24 +115,14 @@ export const register = (app: express.Application) => {
     app.put('/api/artworks/:id', multer.single('file'), async (req, res, next) => {
         // Upload file
         if (req.file) {
-            try {
-                const { buffer } = req.file;
-                const fileUrl = await uploadImage(buffer, req.body.title);
-                req.body.image = fileUrl;
-
-                // Upload thumbnail
-                const thumbnailFileBuffer = await sharp(buffer).resize(thumbnailSize).toBuffer();
-                const thumbnailFileUrl = await uploadImage(thumbnailFileBuffer, `${req.body.title}-thumbnail_${thumbnailSize}`)
-                req.body.thumbnail = thumbnailFileUrl;
-            }
-            catch (err) {
-                let message = 'unknown error';
-                if (err instanceof Error) {
-                    message = err.message;
-                }
-                res.status(400).send({ error: err, message });
-                return;
-            }
+            const { buffer } = req.file;
+            const fileUrl = await uploadImage(buffer, req.body.title);
+            req.body.image = fileUrl;
+            
+            // Upload thumbnail
+            const thumbnailFileBuffer = await sharp(buffer).resize(thumbnailSize).toBuffer();
+            const thumbnailFileUrl = await uploadImage(thumbnailFileBuffer, `${req.body.title}-thumbnail_${thumbnailSize}`)
+            req.body.thumbnail = thumbnailFileUrl;
         }
 
         // Update data
