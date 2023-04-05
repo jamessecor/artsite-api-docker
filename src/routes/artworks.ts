@@ -2,12 +2,10 @@ import express from 'express';
 import Multer from 'multer';
 import { authenticateRequest } from '../models/authentication';
 import { MongoClient, ObjectId } from 'mongodb';
-import sharp from 'sharp';
-import { uploadImage } from '../models/storage';
-import { formatArtworksResponse, formatRequest, IArtworkResponse, validateArtwork } from '../models/artwork';
+import { uploadImage, uploadThumbnails } from '../models/storage';
+import { formatArtworksResponse, formatRequest, IArtwork, IArtworkResponse, validateArtwork } from '../models/artwork';
 
 export const artworksCollection = process.env.TESTING ?? null ? 'test-upload' : 'artworks';
-const thumbnailSize = 200;
 
 export const register = (app: express.Application) => {
     const multer = Multer({
@@ -68,24 +66,20 @@ export const register = (app: express.Application) => {
             return;
         }
 
-        const newArtwork = req.body;
+        const newArtwork = req.body as IArtwork;
         const artworkValidationResult = validateArtwork(newArtwork, true);
         if (artworkValidationResult) {
             res.status(400).send({ artworkValidationResult });
             return;
         }
 
-        // Upload file
-        const { buffer } = req.file;
-        const fileUrl = await uploadImage(buffer, req.body.title);
-        newArtwork.image = fileUrl;
-        // Upload thumbnail
-        const thumbnailFileBuffer = await sharp(buffer).resize(thumbnailSize).toBuffer();
-        const thumbnailFileUrl = await uploadImage(thumbnailFileBuffer, `${req.body.title}-thumbnail_${thumbnailSize}`)
-        newArtwork.thumbnail = thumbnailFileUrl;
-
-        // Update data
         try {
+            // Upload file and thumbnail
+            const { buffer } = req.file;
+            newArtwork.image = await uploadImage(buffer, newArtwork.title);
+            newArtwork.thumbnails = await uploadThumbnails(buffer, newArtwork.title)
+
+            // Update data
             const client = new MongoClient(process.env.DB_CONNECTIONSTRING ?? '');
             await client.connect();
             const db = client.db(process.env.DB_NAME);
@@ -96,8 +90,8 @@ export const register = (app: express.Application) => {
             if (update) {
                 res.status(200).send({
                     message: "inserted successfully",
-                    image: fileUrl,
-                    thumbnail: thumbnailFileUrl,
+                    image: formattedNewArtwork.image,
+                    thumbnails: formattedNewArtwork.thumbnails,
                     _id: update.insertedId
                 });
             } else {
@@ -113,20 +107,15 @@ export const register = (app: express.Application) => {
     });
 
     app.put('/api/artworks/:id', multer.single('file'), async (req, res, next) => {
-        // Upload file
-        if (req.file) {
-            const { buffer } = req.file;
-            const fileUrl = await uploadImage(buffer, req.body.title);
-            req.body.image = fileUrl;
-            
-            // Upload thumbnail
-            const thumbnailFileBuffer = await sharp(buffer).resize(thumbnailSize).toBuffer();
-            const thumbnailFileUrl = await uploadImage(thumbnailFileBuffer, `${req.body.title}-thumbnail_${thumbnailSize}`)
-            req.body.thumbnail = thumbnailFileUrl;
-        }
-
         // Update data
         try {
+            if (req.file) {
+                // Upload file and thumbnail
+                const { buffer } = req.file;
+                req.body.image = await uploadImage(buffer, req.body.title);
+                req.body.thumbnails = await uploadThumbnails(buffer, req.body.title)
+            }
+
             const client = new MongoClient(process.env.DB_CONNECTIONSTRING ?? '');
             await client.connect();
             const db = client.db(process.env.DB_NAME);
@@ -138,7 +127,7 @@ export const register = (app: express.Application) => {
                 res.status(200).send({
                     message: `updated ${formattedRequest.title} successfully`,
                     image: formattedRequest.image,
-                    thumbnail: formattedRequest.thumbnail,
+                    thumbnails: formattedRequest.thumbnails,
                     _id: req.params.id
                 });
             } else {
