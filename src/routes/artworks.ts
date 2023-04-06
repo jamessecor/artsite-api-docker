@@ -77,7 +77,8 @@ export const register = (app: express.Application) => {
             // Upload file and thumbnail
             const { buffer } = req.file;
             newArtwork.image = await uploadImage(buffer, newArtwork.title);
-            newArtwork.thumbnails = await uploadThumbnails(buffer, newArtwork.title)
+            const thumbnailsMap = await uploadThumbnails(buffer, newArtwork.title);
+            newArtwork.thumbnails = Object.fromEntries(thumbnailsMap);
 
             // Update data
             const client = new MongoClient(process.env.DB_CONNECTIONSTRING ?? '');
@@ -90,8 +91,8 @@ export const register = (app: express.Application) => {
             if (update) {
                 res.status(200).send({
                     message: "inserted successfully",
-                    image: formattedNewArtwork.image,
-                    thumbnails: formattedNewArtwork.thumbnails,
+                    image: newArtwork.image,
+                    thumbnails: newArtwork.thumbnails,
                     _id: update.insertedId
                 });
             } else {
@@ -102,7 +103,7 @@ export const register = (app: express.Application) => {
             if (err instanceof Error) {
                 message = err.message;
             }
-            res.status(400).send({ error: err, message });
+            res.status(404).send({ error: err, message });
         }
     });
 
@@ -113,7 +114,8 @@ export const register = (app: express.Application) => {
                 // Upload file and thumbnail
                 const { buffer } = req.file;
                 req.body.image = await uploadImage(buffer, req.body.title);
-                req.body.thumbnails = await uploadThumbnails(buffer, req.body.title)
+                const thumbnailsMap = await uploadThumbnails(buffer, req.body.title)
+                req.body.thumbnails = Object.fromEntries(thumbnailsMap);
             }
 
             const client = new MongoClient(process.env.DB_CONNECTIONSTRING ?? '');

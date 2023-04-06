@@ -10,7 +10,9 @@ export interface IArtwork {
     year: string;
     media: string;
     image: string;
-    thumbnails?: Map<number, string>;
+    thumbnails?: {
+        [k: number]: string
+    }
     isHomePage?: string;
     price: string;
     arrangement?: string;
