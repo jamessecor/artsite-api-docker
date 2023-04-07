@@ -1,22 +1,29 @@
 import { Storage } from '@google-cloud/storage';
 import sharp from 'sharp';
-import { format } from 'util';
 
-const thumbnailSizes = [450, 2500];
+const imageSizes = [450, 2500];
 
-export const uploadThumbnails = (buffer: Buffer, title: string) => new Promise<Map<number, string>>(async (resolve, reject) => {
+export const uploadImages = (buffer: Buffer, title: string) => new Promise<Map<number, string>>(async (resolve, reject) => {
     try {
-        const thumbnailsMap = new Map<number, string>();
-        for (const thumbnailSize of thumbnailSizes) {
+        const imagesMap = new Map<number, string>();
+        try {
+            const originalBuffer = buffer;
+            imagesMap.set(1, await uploadImage(originalBuffer, `${title}_original`));
+        }
+        catch (e) {
+            imagesMap.set(1, e.message);
+        }
+
+        for (const imageSize of imageSizes) {
             try {
-                const thumbnailBuffer = await sharp(buffer).resize(thumbnailSize).toBuffer();
-                thumbnailsMap.set(thumbnailSize, await uploadImage(thumbnailBuffer, `${title}-thumbnail_${thumbnailSize}`));
+                const imageBuffer = await sharp(buffer).resize(imageSize).toBuffer();
+                imagesMap.set(imageSize, await uploadImage(imageBuffer, `${title}_${imageSize}`));
             }
             catch (e) {
-                thumbnailsMap.set(thumbnailSize, e.message);
+                imagesMap.set(imageSize, e.message);
             }
         };
-        resolve(thumbnailsMap);
+        resolve(imagesMap);
     }
     catch (err) {
         const errMap = new Map<number, string>();

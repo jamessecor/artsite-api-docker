@@ -9,10 +9,9 @@ export interface IArtwork {
     title: string;
     year: string;
     media: string;
-    image: string;
-    thumbnails?: {
-        [k: number]: string
-    }
+    images: {
+        [size: number]: string;
+    };
     isHomePage?: string;
     price: string;
     arrangement?: string;
@@ -57,13 +56,13 @@ export const formatArtworkResponse = (artwork: IArtworkResponse) => {
 export const formatArtworksResponse = (artworks: Array<IArtworkResponse>) => artworks.map((artwork) => formatArtworkResponse(artwork));
 
 export const validateArtwork = (artwork: IArtwork, isNew: boolean): IArtwork | null => {
-    const isNewOrHasImage = artwork.image || isNew;
+    const isNewOrHasImage = artwork.images || isNew;
     if (isNewOrHasImage && artwork.media && artwork.price && artwork.title && artwork.year) {
         return null;
     }
 
     return {
-        image: artwork.image,
+        images: artwork.images,
         media: artwork.media,
         price: artwork.price,
         title: artwork.title,

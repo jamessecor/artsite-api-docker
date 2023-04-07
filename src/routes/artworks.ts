@@ -2,7 +2,7 @@ import express from 'express';
 import Multer from 'multer';
 import { authenticateRequest } from '../models/authentication';
 import { MongoClient, ObjectId } from 'mongodb';
-import { uploadImage, uploadThumbnails } from '../models/storage';
+import { uploadImages } from '../models/storage';
 import { formatArtworksResponse, formatRequest, IArtwork, IArtworkResponse, validateArtwork } from '../models/artwork';
 
 export const artworksCollection = process.env.TESTING ?? null ? 'test-upload' : 'artworks';
@@ -76,9 +76,8 @@ export const register = (app: express.Application) => {
         try {
             // Upload file and thumbnail
             const { buffer } = req.file;
-            newArtwork.image = await uploadImage(buffer, newArtwork.title);
-            const thumbnailsMap = await uploadThumbnails(buffer, newArtwork.title);
-            newArtwork.thumbnails = Object.fromEntries(thumbnailsMap);
+            const imagesMap = await uploadImages(buffer, newArtwork.title);
+            newArtwork.images = Object.fromEntries(imagesMap);
 
             // Update data
             const client = new MongoClient(process.env.DB_CONNECTIONSTRING ?? '');
@@ -91,8 +90,7 @@ export const register = (app: express.Application) => {
             if (update) {
                 res.status(200).send({
                     message: "inserted successfully",
-                    image: newArtwork.image,
-                    thumbnails: newArtwork.thumbnails,
+                    images: newArtwork.images,
                     _id: update.insertedId
                 });
             } else {
@@ -113,10 +111,9 @@ export const register = (app: express.Application) => {
             if (req.file) {
                 // Upload file and thumbnail
                 const { buffer } = req.file;
-                req.body.image = await uploadImage(buffer, req.body.title);
-                const thumbnailsMap = await uploadThumbnails(buffer, req.body.title)
-                req.body.thumbnails = Object.fromEntries(thumbnailsMap);
-            }
+                const imagesMap = await uploadImages(buffer, req.body.title);
+                req.body.images = Object.fromEntries(imagesMap);
+                }
 
             const client = new MongoClient(process.env.DB_CONNECTIONSTRING ?? '');
             await client.connect();
@@ -128,8 +125,7 @@ export const register = (app: express.Application) => {
             if (update) {
                 res.status(200).send({
                     message: `updated ${formattedRequest.title} successfully`,
-                    image: formattedRequest.image,
-                    thumbnails: formattedRequest.thumbnails,
+                    images: formattedRequest.images,
                     _id: req.params.id
                 });
             } else {
