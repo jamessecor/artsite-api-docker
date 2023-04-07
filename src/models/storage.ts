@@ -2,7 +2,7 @@ import { Storage } from '@google-cloud/storage';
 import sharp from 'sharp';
 import { format } from 'util';
 
-const thumbnailSizes = [200, 450];
+const thumbnailSizes = [450, 2500];
 
 export const uploadThumbnails = (buffer: Buffer, title: string) => new Promise<Map<number, string>>(async (resolve, reject) => {
     try {
