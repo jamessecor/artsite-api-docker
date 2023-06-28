@@ -2,7 +2,7 @@ export type Groupings = '' | "nomophobia" | "digital_edits" | "storage" | "mug_d
 
 interface ILike {
     timestamp: string;
-    amount: number;
+    amount: string;
 }
 
 export interface IArtwork {
@@ -49,7 +49,7 @@ export const formatRequest = (body: IArtwork) => {
 export const formatArtworkResponse = (artwork: IArtworkResponse) => {
     return {
         ...artwork,
-        totalLikes: artwork.likes ? artwork.likes.reduce((partialSum, like) => partialSum + like.amount, 0) : 0
+        totalLikes: artwork.likes ? artwork.likes.reduce((partialSum, like) => partialSum + parseInt(like.amount), 0) : 0
     };
 };
 
