@@ -49,7 +49,7 @@ export const formatRequest = (body: IArtwork) => {
 export const formatArtworkResponse = (artwork: IArtworkResponse) => {
     return {
         ...artwork,
-        totalLikes: artwork.likes ? artwork.likes.reduce((partialSum, like) => partialSum + parseInt(like.amount), 0) : 0
+        totalLikes: artwork.likes ? artwork.likes.reduce((partialSum, like) => partialSum + parseInt(like.amount, 10), 0) : 0
     };
 };
 
