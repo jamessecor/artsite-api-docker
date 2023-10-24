@@ -113,7 +113,7 @@ export const register = (app: express.Application) => {
                 const { buffer } = req.file;
                 const imagesMap = await uploadImages(buffer, req.body.title);
                 req.body.images = Object.fromEntries(imagesMap);
-                }
+            }
 
             const client = new MongoClient(process.env.DB_CONNECTIONSTRING ?? '');
             await client.connect();
@@ -180,6 +180,61 @@ export const register = (app: express.Application) => {
             res.status(400).send({ error: err, message });
         }
     });
+
+    /**
+     * MIGRATION: this fixed the issue where images were being stored in an array instead of an object
+     *
+    app.post('/api/artworks/fix-images', async (req, res, next) => {
+        try {
+            const client = new MongoClient(process.env.DB_CONNECTIONSTRING ?? '');
+            await client.connect();
+            const db = client.db(process.env.DB_NAME);
+            const collection = db.collection(artworksCollection);
+
+            const result = await collection.find({ images: { $type: "array" } }).toArray();
+            const artworkResult = result as unknown as Array<IArtworkResponse>;
+
+            const updatedArtworks = artworkResult.map((artwork) => {
+                const updatedImagesMap = new Map();
+                updatedImagesMap.set(1, artwork.images[1]);
+
+                if (artwork.images[450]) {
+                    updatedImagesMap.set(450, artwork.images[450]);
+                }
+
+                if (artwork.images[2500]) {
+                    updatedImagesMap.set(2500, artwork.images[2500]);
+                }
+
+                return {
+                    ...artwork,
+                    images: Object.fromEntries(updatedImagesMap)
+                };
+            });
+
+            const updateMap = new Map();
+            let updateCount = 0;
+            for (let i = 0; i < updatedArtworks.length; i++) {
+                const a = updatedArtworks[i];
+                console.log('a', a.images, new ObjectId(a._id));
+                const update = await collection.updateOne({ _id: a._id }, { $set: { images: a.images } });
+                console.log('update', update);
+                if (update) {
+                    updateMap.set(i, a.images);
+                    updateCount += update.modifiedCount;
+                }
+            }
+
+            res.status(200).send({ results: { updateCount: updateCount, data: Object.fromEntries(updateMap) } });
+        } catch (err) {
+            let message = 'unknown error';
+            if (err instanceof Error) {
+                message = err.message;
+            }
+            res.status(400).send({ error: err, message });
+        }
+    });
+    */
 
     // Delete all likes
     app.delete('/api/artworks/likes', async (req, res) => {
