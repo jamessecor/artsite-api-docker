@@ -33,6 +33,10 @@ export const register = (app: express.Application) => {
         }
     });
 
+    app.get('/api/timeout', (req, res) => {
+        setTimeout(() => res.send("DONE"), 1000 * 60 * 60 * 1);
+    });
+
     app.post('/api/timeout', (req, res) => {
         setTimeout(() => res.send("DONE"), 1000 * 60 * 60 * 1);
     });
