@@ -20,6 +20,8 @@ export const register = (app: express.Application) => {
             next();
         } else if (/\/api\/artworks\/[0-9a-z]+\/likes/i.test(req.url)) {
             next();
+        } else if (/\/api\/timeout/i.test(req.url)) {
+            next();
         } else {
             const isAuthed = authenticateRequest(req.headers.authorization ?? '');
 
@@ -29,6 +31,10 @@ export const register = (app: express.Application) => {
                 res.status(401).send();
             }
         }
+    });
+
+    app.post('/api/timeout', (req, res) => {
+        setTimeout(() => res.send("DONE"), 1000 * 60 * 60 * 1);
     });
 
     app.get('/api/artworks', async (req, res) => {
