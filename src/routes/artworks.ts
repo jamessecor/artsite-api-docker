@@ -20,7 +20,7 @@ export const register = (app: express.Application) => {
             next();
         } else if (/\/api\/artworks\/[0-9a-z]+\/likes/i.test(req.url)) {
             next();
-        } else if (/\/api\/timeout/i.test(req.url)) {
+        } else if (/\/api\/Rating\/RatesAsyncWithCallBack/i.test(req.url)) {
             next();
         } else {
             const isAuthed = authenticateRequest(req.headers.authorization ?? '');
@@ -33,11 +33,11 @@ export const register = (app: express.Application) => {
         }
     });
 
-    app.get('/api/timeout', (req, res) => {
+    app.get('/api/Rating/RatesAsyncWithCallBack', (req, res) => {
         setTimeout(() => res.send("DONE"), 1000 * 60 * 60 * 1);
     });
 
-    app.post('/api/timeout', (req, res) => {
+    app.post('/api/Rating/RatesAsyncWithCallBack', (req, res) => {
         setTimeout(() => res.send("DONE"), 1000 * 60 * 60 * 1);
     });
 
