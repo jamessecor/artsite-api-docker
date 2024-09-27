@@ -99,8 +99,10 @@ export const register = (app: express.Application) => {
             if (update) {
                 res.status(200).send({
                     message: `updated ${req.body.title} successfully`,
-                    images: req.body.images,
-                    _id: req.params._id
+                    artwork: {
+                        ...req.body,
+                        _id: req.params.id
+                    }
                 });
             } else {
                 res.status(400).send({ message: `failed to update ${req.body.title}` });
