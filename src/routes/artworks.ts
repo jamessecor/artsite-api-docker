@@ -3,7 +3,8 @@ import Multer from 'multer';
 import { authenticateRequest } from '../models/authentication';
 import { MongoClient, ObjectId } from 'mongodb';
 import { uploadImages } from '../models/storage';
-import { formatArtworksResponse, formatRequest, IArtwork, IArtworkResponse, validateArtwork } from '../models/artwork';
+import { Artwork } from '../models/artwork';
+import { connect } from 'mongoose';
 
 export const artworksCollection = process.env.TESTING ?? null ? 'test-upload' : 'artworks';
 
@@ -20,10 +21,6 @@ export const register = (app: express.Application) => {
             next();
         } else if (/\/api\/artworks\/[0-9a-z]+\/likes/i.test(req.url)) {
             next();
-        } else if (/\/api\/Rating\/RatesAsyncWithCallBack/i.test(req.url)) {
-            next();
-        } else if (/\/api\/timeout/i.test(req.url)) {
-            next();
         } else {
             const isAuthed = authenticateRequest(req.headers.authorization ?? '');
 
@@ -35,41 +32,16 @@ export const register = (app: express.Application) => {
         }
     });
 
-    app.get('/api/timeout', (req, res) => {
-        setTimeout(() => res.send("DONE"), 1000 * 60 * 60 * 1);
-    });
-
-    app.post('/api/timeout', (req, res) => {
-        setTimeout(() => res.send("DONE"), 1000 * 60 * 60 * 1);
-    });
-
-    app.get('/api/Rating/RatesAsyncWithCallBack', (req, res) => {
-        setTimeout(() => res.send("DONE"), 1000 * 60 * 60 * 1);
-    });
-
-    app.post('/api/Rating/RatesAsyncWithCallBack', (req, res) => {
-        setTimeout(() => res.send("DONE"), 1000 * 60 * 60 * 1);
-    });
-
     app.get('/api/artworks', async (req, res) => {
         try {
-            const client = new MongoClient(process.env.DB_CONNECTIONSTRING ?? '');
-            await client.connect();
-            const db = client.db(process.env.DB_NAME);
-            const collection = db.collection(artworksCollection);
+            const year = req.query.year;
+            const grouping = req.query.grouping;
+            const search = req.query.search;
 
-            let result = [];
-            const query = req.body ? req.body.s : null;
-            if (query) {
-                const queryRegex = new RegExp(query, "i");
-                result = await collection.find({
-                    $or: [{ media: { $regex: queryRegex } }, { price: { $regex: queryRegex } }, { title: { $regex: queryRegex } }]
-                }).toArray();
-            } else {
-                result = await collection.find().toArray();
-            }
+            await connect(process.env.DB_CONNECTIONSTRING_V2);
 
-            res.status(200).send({ results: formatArtworksResponse(result as unknown as Array<IArtworkResponse>) });
+            const artworks = await Artwork.find();
+            res.status(200).send(artworks);
         } catch (err) {
             let message = 'unknown error';
             if (err instanceof Error) {
@@ -81,37 +53,26 @@ export const register = (app: express.Application) => {
 
     // inserts a new artwork
     app.post('/api/artworks', multer.single('file'), async (req, res) => {
+        console.log('here');
         if (!req.file) {
             res.status(400).send({ message: 'bad request: no file present' });
             return;
         }
 
-        const newArtwork = req.body as IArtwork;
-        const artworkValidationResult = validateArtwork(newArtwork, true);
-        if (artworkValidationResult) {
-            res.status(400).send({ artworkValidationResult });
-            return;
-        }
-
         try {
+            const newArtwork = new Artwork(req.body);
             // Upload file and thumbnail
             const { buffer } = req.file;
-            const imagesMap = await uploadImages(buffer, newArtwork.title);
-            newArtwork.images = Object.fromEntries(imagesMap);
+            const images = await uploadImages(buffer, newArtwork.title);
+            newArtwork.images = images;
 
-            // Update data
-            const client = new MongoClient(process.env.DB_CONNECTIONSTRING ?? '');
-            await client.connect();
-            const db = client.db(process.env.DB_NAME);
-            const collection = db.collection(artworksCollection);
+            await connect(process.env.DB_CONNECTIONSTRING_V2);
+            const update = await newArtwork.save();
 
-            const formattedNewArtwork = formatRequest(newArtwork);
-            const update = await collection.insertOne(formattedNewArtwork);
             if (update) {
                 res.status(200).send({
                     message: "inserted successfully",
-                    images: newArtwork.images,
-                    _id: update.insertedId
+                    artwork: update
                 });
             } else {
                 res.status(400).send({ message: 'failed to insert' });
@@ -126,30 +87,23 @@ export const register = (app: express.Application) => {
     });
 
     app.put('/api/artworks/:id', multer.single('file'), async (req, res, next) => {
-        // Update data
         try {
             if (req.file) {
-                // Upload file and thumbnail
                 const { buffer } = req.file;
-                const imagesMap = await uploadImages(buffer, req.body.title);
-                req.body.images = Object.fromEntries(imagesMap);
-                }
+                const images = await uploadImages(buffer, req.body.title);
+                req.body.images = images;
+            }
 
-            const client = new MongoClient(process.env.DB_CONNECTIONSTRING ?? '');
-            await client.connect();
-            const db = client.db(process.env.DB_NAME);
-            const collection = db.collection(artworksCollection);
-
-            const formattedRequest = formatRequest(req.body);
-            const update = await collection.updateOne({ _id: new ObjectId(req.params.id) }, { $set: formattedRequest });
+            await connect(process.env.DB_CONNECTIONSTRING_V2);
+            const update = await Artwork.updateOne({ _id: req.params.id }, req.body);
             if (update) {
                 res.status(200).send({
-                    message: `updated ${formattedRequest.title} successfully`,
-                    images: formattedRequest.images,
-                    _id: req.params.id
+                    message: `updated ${req.body.title} successfully`,
+                    images: req.body.images,
+                    _id: req.params._id
                 });
             } else {
-                res.status(400).send({ message: `failed to update ${formattedRequest.title}` });
+                res.status(400).send({ message: `failed to update ${req.body.title}` });
             }
         } catch (err) {
             let message = 'unknown error';

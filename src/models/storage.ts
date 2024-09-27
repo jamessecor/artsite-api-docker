@@ -1,33 +1,49 @@
 import { Storage } from '@google-cloud/storage';
 import sharp from 'sharp';
+import { IImage } from './artwork';
 
 const imageSizes = [450, 2500];
 
-export const uploadImages = (buffer: Buffer, title: string) => new Promise<Map<number, string>>(async (resolve, reject) => {
+export const uploadImages = (buffer: Buffer, title: string) => new Promise<Array<IImage>>(async (resolve, reject) => {
     try {
-        const imagesMap = new Map<number, string>();
+        const images = new Array<IImage>();
         try {
             const originalBuffer = buffer;
-            imagesMap.set(1, await uploadImage(originalBuffer, `${title}_original`));
+            images.push({
+                size: 1,
+                url: await uploadImage(originalBuffer, `${title}_original`)
+            });
         }
         catch (e) {
-            imagesMap.set(1, e.message);
+            images.push({
+                size: 1,
+                url: e.message
+            });
         }
 
         for (const imageSize of imageSizes) {
             try {
                 const imageBuffer = await sharp(buffer).resize(imageSize).toBuffer();
-                imagesMap.set(imageSize, await uploadImage(imageBuffer, `${title}_${imageSize}`));
+                images.push({
+                    size: imageSize,
+                    url: await uploadImage(imageBuffer, `${title}_${imageSize}`)
+                });
             }
             catch (e) {
-                imagesMap.set(imageSize, e.message);
+                images.push({
+                    size: imageSize,
+                    url: e.message
+                });
             }
         };
-        resolve(imagesMap);
+        resolve(images);
     }
     catch (err) {
-        const errMap = new Map<number, string>();
-        errMap.set(-1, err.message);
+        const errMap = new Array<IImage>();
+        errMap.push({
+            size: -1,
+            url: err.message
+        });
         reject(errMap);
     }
 });
