@@ -53,7 +53,6 @@ export const register = (app: express.Application) => {
 
     // inserts a new artwork
     app.post('/api/artworks', multer.single('file'), async (req, res) => {
-        console.log('here');
         if (!req.file) {
             res.status(400).send({ message: 'bad request: no file present' });
             return;
