@@ -124,12 +124,8 @@ export const register = (app: express.Application) => {
         }
         // Update artwork likes
         try {
-            const client = new MongoClient(process.env.DB_CONNECTIONSTRING ?? '');
-            await client.connect();
-            const db = client.db(process.env.DB_NAME);
-            const collection = db.collection(artworksCollection);
-            const artwork = await collection.findOne({ _id: new ObjectId(req.params.id) });
-
+            await connect(process.env.DB_CONNECTIONSTRING_V2);
+            const artwork = await Artwork.findById(req.params.id);
             const likes = artwork.likes ?? [];
             const like = {
                 timestamp: req.body.timestamp,
@@ -137,16 +133,14 @@ export const register = (app: express.Application) => {
             };
             const updatedLikes = [...likes, like];
 
-            const update = await collection.updateOne({ _id: new ObjectId(req.params.id) }, { $set: { likes: updatedLikes } });
+            const update = await Artwork.updateOne({ _id: req.params.id }, { likes: updatedLikes });
             if (update) {
                 res.status(200).send({
                     message: `updated ${artwork.title} successfully`,
-                    likes: updatedLikes,
-                    totalLikes: updatedLikes.reduce((partialSum, thisLike) => partialSum + thisLike.amount, 0),
-                    _id: req.params.id
+                    artwork: artwork
                 });
             } else {
-                res.status(400).send({ message: `failed to update ${artwork.title}` });
+                res.status(400).send({ message: `failed to update ${req.body.title}` });
             }
         } catch (err) {
             let message = 'unknown error';
@@ -158,58 +152,54 @@ export const register = (app: express.Application) => {
     });
 
     // Delete all likes
-    app.delete('/api/artworks/likes', async (req, res) => {
-        try {
-            const client = new MongoClient(process.env.DB_CONNECTIONSTRING ?? '');
-            await client.connect();
-            const db = client.db(process.env.DB_NAME);
-            const collection = db.collection(artworksCollection);
+    // app.delete('/api/artworks/likes', async (req, res) => {
+    //     try {
+    //         const client = new MongoClient(process.env.DB_CONNECTIONSTRING ?? '');
+    //         await client.connect();
+    //         const db = client.db(process.env.DB_NAME);
+    //         const collection = db.collection(artworksCollection);
 
-            const removeLikesResult = collection.updateMany({ likes: { $exists: true } }, { $set: { likes: undefined } });
-            if (removeLikesResult) {
-                res.status(200).send({ message: "deleted successfully" });
-            }
-        } catch (err) {
-            let message = 'unknown error';
-            if (err instanceof Error) {
-                message = err.message;
-            }
-            res.status(400).send({ error: err, message });
-        }
-    });
+    //         const removeLikesResult = collection.updateMany({ likes: { $exists: true } }, { $set: { likes: undefined } });
+    //         if (removeLikesResult) {
+    //             res.status(200).send({ message: "deleted successfully" });
+    //         }
+    //     } catch (err) {
+    //         let message = 'unknown error';
+    //         if (err instanceof Error) {
+    //             message = err.message;
+    //         }
+    //         res.status(400).send({ error: err, message });
+    //     }
+    // });
 
-    // Delete artworks by query
-    app.delete('/api/artworks', async (req, res) => {
-        try {
-            const client = new MongoClient(process.env.DB_CONNECTIONSTRING ?? '');
-            await client.connect();
-            const db = client.db(process.env.DB_NAME);
-            const collection = db.collection(artworksCollection);
+    // // Delete artworks by query
+    // app.delete('/api/artworks', async (req, res) => {
+    //     try {
+    //         const client = new MongoClient(process.env.DB_CONNECTIONSTRING ?? '');
+    //         await client.connect();
+    //         const db = client.db(process.env.DB_NAME);
+    //         const collection = db.collection(artworksCollection);
 
-            const remove = await collection.deleteMany(req.body);
+    //         const remove = await collection.deleteMany(req.body);
 
-            if (remove) {
-                res.status(200).send({ message: "deleted successfully" });
-            } else {
-                res.status(400).send({ message: 'failed to delete' });
-            }
-        } catch (err) {
-            let message = 'unknown error';
-            if (err instanceof Error) {
-                message = err.message;
-            }
-            res.status(400).send({ error: err, message });
-        }
-    });
+    //         if (remove) {
+    //             res.status(200).send({ message: "deleted successfully" });
+    //         } else {
+    //             res.status(400).send({ message: 'failed to delete' });
+    //         }
+    //     } catch (err) {
+    //         let message = 'unknown error';
+    //         if (err instanceof Error) {
+    //             message = err.message;
+    //         }
+    //         res.status(400).send({ error: err, message });
+    //     }
+    // });
 
     app.delete('/api/artworks/:id', async (req, res) => {
         try {
-            const client = new MongoClient(process.env.DB_CONNECTIONSTRING ?? '');
-            await client.connect();
-            const db = client.db(process.env.DB_NAME);
-            const collection = db.collection(artworksCollection);
-
-            const remove = await collection.deleteOne({ _id: new ObjectId(req.params.id) });
+            await connect(process.env.DB_CONNECTIONSTRING_V2);
+            const remove = await Artwork.deleteOne({ _id: req.params.id });
 
             if (remove) {
                 res.status(200).send({
