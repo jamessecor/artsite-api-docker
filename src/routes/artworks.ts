@@ -37,12 +37,21 @@ export const register = (app: express.Application) => {
             const grouping = req.query.grouping;
             const isHomePage = req.query.isHomePage;
             const search = req.query.search;
+            const includeGroupings = req.query.includeGroupings;
 
             await connect(process.env.DB_CONNECTIONSTRING_V2);
 
             const artworksQuery = Artwork.find();
             if (year) {
                 artworksQuery.where('year').equals(year);
+                if (includeGroupings !== 'true' && !grouping) {
+                    artworksQuery.where({
+                        $or: [
+                            { grouping: [] },
+                            { grouping: null }
+                        ]
+                    });
+                }
             }
 
             if (grouping) {
