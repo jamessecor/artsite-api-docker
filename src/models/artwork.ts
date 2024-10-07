@@ -20,7 +20,7 @@ export interface IArtwork {
     width: number;
     images: Array<IImage>;
     likes?: Array<ILike>;
-    isHomePage?: string;
+    isHomePage?: boolean;
     price: string;
     arrangement?: string;
     grouping?: Array<Groupings>;
@@ -39,7 +39,7 @@ interface IArtworkMethods {
 type ArtworkModel = Model<IArtwork, {}, IArtworkMethods>;
 
 const artworkSchema = new Schema<IArtwork, ArtworkModel, IArtworkMethods>({
-    title: { type: String, required: true },
+    title: { type: String, required: true, index: 'text' },
     year: { type: String, required: true },
     media: { type: String, required: true },
     height: { type: Number, required: true },

@@ -1,7 +1,6 @@
 import express from 'express';
 import Multer from 'multer';
 import { authenticateRequest } from '../models/authentication';
-import { MongoClient, ObjectId } from 'mongodb';
 import { uploadImages } from '../models/storage';
 import { Artwork } from '../models/artwork';
 import { connect } from 'mongoose';
@@ -36,13 +35,60 @@ export const register = (app: express.Application) => {
         try {
             const year = req.query.year;
             const grouping = req.query.grouping;
+            const isHomePage = req.query.isHomePage;
             const search = req.query.search;
 
             await connect(process.env.DB_CONNECTIONSTRING_V2);
 
-            const artworks = await Artwork.find();
+            const artworksQuery = Artwork.find();
+            if (year) {
+                artworksQuery.where('year').equals(year);
+            }
+
+            if (grouping) {
+                artworksQuery.where('grouping').equals(grouping);
+            }
+
+            if (isHomePage === 'true') {
+                artworksQuery.where('isHomePage').equals(true);
+            }
+
+            if (search) {
+                const regex = new RegExp(`.*${search}.*`, 'i');
+                artworksQuery.where({
+                    $or: [
+                        { title: { $regex: regex } },
+                        { year: { $regex: regex } },
+                        { media: { $regex: regex } }
+                    ]
+                });
+            }
+
+            artworksQuery.sort('arrangement');
+
+            const artworks = await artworksQuery;
             res.status(200).send(artworks);
         } catch (err) {
+            let message = 'unknown error';
+            if (err instanceof Error) {
+                message = err.message;
+            }
+            res.status(400).send({ error: err, message });
+        }
+    });
+
+    app.get('/api/artworks/meta-data', async (req, res) => {
+        try {
+            await connect(process.env.DB_CONNECTIONSTRING_V2);
+
+            const artworks = await Artwork.find().sort({ year: 'desc' }).select('grouping year');
+            const response = {
+                groupings: [...new Set(artworks.flatMap((artwork) => artwork.grouping))],
+                years: [...new Set(artworks.map((artwork) => artwork.year))]
+            }
+            res.status(200).send(response);
+        }
+        catch (err) {
             let message = 'unknown error';
             if (err instanceof Error) {
                 message = err.message;
