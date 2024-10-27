@@ -86,6 +86,56 @@ export const register = (app: express.Application) => {
         }
     });
 
+    // TODO: remove this after running
+    app.get('/api/artworks/update-sale-date', async (req, res) => {
+        await connect(process.env.DB_CONNECTIONSTRING_V2);
+
+        const artworks = await Artwork.find({
+            saleDate: { $type: "string", $ne: '' } // Matches documents where saleDate is a string
+        });
+
+        const updatePromises = artworks.map((artwork) => {
+            const date = new Date(artwork.saleDate);
+
+            return Artwork.updateOne(
+                { _id: artwork._id },
+                { $set: { saleDate: date } }
+            );
+        });
+
+        await Promise.all(updatePromises);
+        console.log('All dates updated successfully');
+        res.status(202).send(`Updated ${artworks.length} artworks`);
+    });
+
+    app.get('/api/artworks/sold', async (req, res) => {
+        try {
+            const startDate = req.query.start ?? new Date('1800-01-01');
+            const endDate = req.query.end ?? new Date();
+
+            await connect(process.env.DB_CONNECTIONSTRING_V2);
+
+            const artworksQuery = Artwork
+                .find({
+                    saleDate: {
+                        $gte: startDate,
+                        $lte: endDate
+                    }
+                })
+                .sort({ saleDate: 1 });
+
+            const artworks = await artworksQuery;
+
+            res.status(200).send(artworks);
+        } catch (err) {
+            let message = 'unknown error';
+            if (err instanceof Error) {
+                message = err.message;
+            }
+            res.status(400).send({ error: err, message });
+        }
+    });
+
     app.get('/api/artworks/meta-data', async (req, res) => {
         try {
             await connect(process.env.DB_CONNECTIONSTRING_V2);

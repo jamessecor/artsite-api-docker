@@ -25,7 +25,7 @@ export interface IArtwork {
     arrangement?: string;
     grouping?: Array<Groupings>;
     buyerID?: string;
-    saleDate?: string;
+    saleDate?: Date;
     taxStatus?: string;
     salePrice?: string;
     saleRevenue?: string;
@@ -57,7 +57,7 @@ const artworkSchema = new Schema<IArtwork, ArtworkModel, IArtworkMethods>({
     arrangement: Number,
     grouping: Array<Groupings>,
     buyerID: String,
-    saleDate: String,
+    saleDate: Date,
     taxStatus: String,
     salePrice: String,
     saleRevenue: String,
