@@ -104,7 +104,7 @@ export const register = (app: express.Application) => {
         });
 
         await Promise.all(updatePromises);
-        console.log('All dates updated successfully');
+
         res.status(202).send(`Updated ${artworks.length} artworks`);
     });
 
