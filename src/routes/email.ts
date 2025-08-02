@@ -1,5 +1,6 @@
 import express from 'express';
 import emailjs from '@emailjs/nodejs';
+import { addContact, EmailDestinationEnum } from '../services/mailchimpApi';
 
 const serviceId = process.env.EMAILJS_SERVICE_ID ?? '';
 const templateId = process.env.EMAILJS_TEMPLATE_ID ?? '';
@@ -25,6 +26,9 @@ export const register = (app: express.Application) => {
                     publicKey,
                     privateKey
                 });
+
+            // Add contact to mailchimp
+            addContact(req.body.email, EmailDestinationEnum.Personal);
 
             if (response) {
                 res.status(200).send({ message: `Successfully sent email from ${templateParams.firstname} ${templateParams.lastname}, ${templateParams.email}` });
@@ -59,6 +63,9 @@ export const register = (app: express.Application) => {
                     publicKey,
                     privateKey
                 });
+
+            // Add contact to mailchimp
+            addContact(req.body.email, EmailDestinationEnum.TheFront);
 
             if (response) {
                 res.status(200).send({ message: `Successfully sent email from ${templateParams.firstname} ${templateParams.lastname}, ${templateParams.email}` });
