@@ -86,28 +86,6 @@ export const register = (app: express.Application) => {
         }
     });
 
-    // TODO: remove this after running
-    app.get('/api/artworks/update-sale-date', async (req, res) => {
-        await connect(process.env.DB_CONNECTIONSTRING_V2);
-
-        const artworks = await Artwork.find({
-            saleDate: { $type: "string", $ne: '' } // Matches documents where saleDate is a string
-        });
-
-        const updatePromises = artworks.map((artwork) => {
-            const date = new Date(artwork.saleDate);
-
-            return Artwork.updateOne(
-                { _id: artwork._id },
-                { $set: { saleDate: date } }
-            );
-        });
-
-        await Promise.all(updatePromises);
-
-        res.status(202).send(`Updated ${artworks.length} artworks`);
-    });
-
     app.get('/api/artworks/sold', async (req, res) => {
         try {
             const startDate = req.query.start ?? new Date('1800-01-01');
