@@ -25,11 +25,15 @@ export interface IArtwork {
     arrangement?: string;
     grouping?: Array<Groupings>;
     buyerID?: string;
+    buyerName?: string;
+    buyerEmail?: string;
+    buyerPhone?: string;
     saleDate?: Date;
     taxStatus?: string;
     salePrice?: string;
     saleRevenue?: string;
     isNFS?: string;
+    location?: string;
 }
 
 interface IArtworkMethods {
@@ -57,11 +61,15 @@ const artworkSchema = new Schema<IArtwork, ArtworkModel, IArtworkMethods>({
     arrangement: Number,
     grouping: Array<Groupings>,
     buyerID: String,
+    buyerName: String,
+    buyerEmail: String,
+    buyerPhone: String,
     saleDate: Date,
     taxStatus: String,
     salePrice: String,
     saleRevenue: String,
     isNFS: String,
+    location: String,
 });
 
 artworkSchema.method('totalLikes', function totalLikes() {
