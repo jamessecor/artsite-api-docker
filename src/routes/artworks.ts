@@ -31,6 +31,14 @@ export const register = (app: express.Application) => {
         }
     });
 
+    const filterSensitiveFields = (artwork: any, isAuthenticated: boolean) => {
+        if (isAuthenticated) {
+            return artwork;
+        }
+        const { buyerID, buyerName, buyerEmail, buyerPhone, location, ...publicInfo } = artwork._doc || artwork;
+        return publicInfo;
+    };
+
     app.get('/api/artworks', async (req, res) => {
         try {
             const year = req.query.year;
@@ -38,6 +46,7 @@ export const register = (app: express.Application) => {
             const isHomePage = req.query.isHomePage;
             const search = req.query.search;
             const includeGroupings = req.query.includeGroupings;
+            const isAuthenticated = authenticateRequest(req.headers.authorization ?? '');
 
             await connect(process.env.DB_CONNECTIONSTRING_V2);
 
@@ -75,7 +84,13 @@ export const register = (app: express.Application) => {
 
             artworksQuery.sort('arrangement');
 
-            const artworks = await artworksQuery;
+            let artworks = await artworksQuery;
+
+            // Filter sensitive fields for unauthenticated users
+            if (!isAuthenticated) {
+                artworks = artworks.map(artwork => filterSensitiveFields(artwork, false));
+            }
+
             res.status(200).send(artworks);
         } catch (err) {
             let message = 'unknown error';
@@ -90,6 +105,7 @@ export const register = (app: express.Application) => {
         try {
             const startDate = req.query.start ?? new Date('1800-01-01');
             const endDate = req.query.end ?? new Date();
+            const isAuthenticated = authenticateRequest(req.headers.authorization ?? '');
 
             await connect(process.env.DB_CONNECTIONSTRING_V2);
 
@@ -102,7 +118,12 @@ export const register = (app: express.Application) => {
                 })
                 .sort({ saleDate: 1 });
 
-            const artworks = await artworksQuery;
+            let artworks = await artworksQuery;
+
+            // Filter sensitive fields for unauthenticated users
+            if (!isAuthenticated) {
+                artworks = artworks.map(artwork => filterSensitiveFields(artwork, false));
+            }
 
             res.status(200).send(artworks);
         } catch (err) {
