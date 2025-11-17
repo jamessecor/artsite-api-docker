@@ -4,6 +4,8 @@ import { authenticateRequest } from '../models/authentication';
 import { uploadImages } from '../models/storage';
 import { Artwork } from '../models/artwork';
 import { connect } from 'mongoose';
+import { Document } from 'mongoose';
+import { IArtwork } from '../models/artwork';
 
 export const artworksCollection = process.env.TESTING ?? null ? 'test-upload' : 'artworks';
 
@@ -31,11 +33,15 @@ export const register = (app: express.Application) => {
         }
     });
 
-    const filterSensitiveFields = (artwork: any, isAuthenticated: boolean) => {
+    const filterSensitiveFields = (artwork: Document<unknown, {}, IArtwork>, isAuthenticated: boolean) => {
+        const artworkObj = artwork.toObject();
         if (isAuthenticated) {
-            return artwork;
+            return artworkObj;
         }
-        const { buyerID, buyerName, buyerEmail, buyerPhone, location, ...publicInfo } = artwork._doc || artwork;
+        const { buyerID, buyerName, buyerEmail, buyerPhone, location, ...publicInfo } = artworkObj;
+        if (artworkObj.images.length > 1) {
+            publicInfo.images = [artworkObj.images.sort((a, b) => a.size - b.size)[1]];
+        }
         return publicInfo;
     };
 
@@ -84,14 +90,16 @@ export const register = (app: express.Application) => {
 
             artworksQuery.sort('arrangement');
 
-            let artworks = await artworksQuery;
+            const artworks = await artworksQuery;
 
             // Filter sensitive fields for unauthenticated users
-            if (!isAuthenticated) {
-                artworks = artworks.map(artwork => filterSensitiveFields(artwork, false));
+            if (isAuthenticated) {
+                res.status(200).send(artworks);
             }
-
-            res.status(200).send(artworks);
+            else {
+                const filteredArtworks = artworks.map(artwork => filterSensitiveFields(artwork, false));
+                res.status(200).send(filteredArtworks);
+            }
         } catch (err) {
             let message = 'unknown error';
             if (err instanceof Error) {
@@ -118,14 +126,17 @@ export const register = (app: express.Application) => {
                 })
                 .sort({ saleDate: 1 });
 
-            let artworks = await artworksQuery;
+            const artworks = await artworksQuery;
 
             // Filter sensitive fields for unauthenticated users
-            if (!isAuthenticated) {
-                artworks = artworks.map(artwork => filterSensitiveFields(artwork, false));
+            if (isAuthenticated) {
+                res.status(200).send(artworks);
+            }
+            else {
+                const filteredArtworks = artworks.map(artwork => filterSensitiveFields(artwork, false));
+                res.status(200).send(filteredArtworks);
             }
 
-            res.status(200).send(artworks);
         } catch (err) {
             let message = 'unknown error';
             if (err instanceof Error) {
