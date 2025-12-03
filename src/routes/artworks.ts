@@ -225,7 +225,7 @@ export const register = (app: express.Application) => {
                     if (newArrangement > currentArrangement) {
                         // Moving down in the list (arrangement number increases)
 
-                        const update = await Artwork.updateMany(
+                        await Artwork.updateMany(
                             {
                                 year: req.body.year,
                                 _id: { $ne: req.params.id }, // Exclude the current artwork
