@@ -202,6 +202,15 @@ export const register = (app: express.Application) => {
 
     app.put('/api/artworks/:id', multer.single('file'), async (req, res, next) => {
         try {
+            const currentArtwork = await Artwork.findById(req.params.id);
+            if (!currentArtwork) {
+                res.status(404).send({ message: 'artwork not found' });
+                return;
+            }
+
+            const currentArrangement = currentArtwork?.arrangement || 0;
+            const newArrangement = req.body.arrangement;
+
             if (req.file) {
                 const { buffer } = req.file;
                 const images = await uploadImages(buffer, req.body.title);
@@ -211,6 +220,33 @@ export const register = (app: express.Application) => {
             await connect(process.env.DB_CONNECTIONSTRING_V2);
             const update = await Artwork.updateOne({ _id: req.params.id }, req.body);
             if (update) {
+                // Only reorder if the arrangement has changed
+                if (newArrangement !== undefined && newArrangement !== currentArrangement) {
+                    if (newArrangement > currentArrangement) {
+                        // Moving down in the list (arrangement number increases)
+
+                        const update = await Artwork.updateMany(
+                            {
+                                year: req.body.year,
+                                _id: { $ne: req.params.id }, // Exclude the current artwork
+                                arrangement: { $gt: currentArrangement, $lte: newArrangement }
+                            },
+                            { $inc: { arrangement: -1 } }
+                        );
+                        console.log('updated', update);
+                    } else {
+                        // Moving up in the list (arrangement number decreases)
+                        await Artwork.updateMany(
+                            {
+                                year: req.body.year,
+                                _id: { $ne: req.params.id }, // Exclude the current artwork
+                                arrangement: { $gte: newArrangement, $lt: currentArrangement }
+                            },
+                            { $inc: { arrangement: 1 } }
+                        );
+                    }
+                }
+
                 res.status(200).send({
                     message: `updated ${req.body.title} successfully`,
                     artwork: {
@@ -331,4 +367,45 @@ export const register = (app: express.Application) => {
             res.status(400).send({ error: err, message });
         }
     });
+
+    // app.get('/api/artworks/rearrange', async (req, res) => {
+    //     try {
+    //         console.log('rearranging artworks');
+    //         await connect(process.env.DB_CONNECTIONSTRING_V2);
+    //         const artworks = await Artwork.find();
+    //         const years = new Set(artworks.map((artwork) => artwork.year));
+    //         years.forEach(async (year) => {
+    //             let count = 0;
+    //             const artworksForYear = artworks.filter((artwork) => artwork.year === year);
+    //             console.log(year, 'artworksForYear: ', artworksForYear.length);
+    //             artworksForYear
+    //                 .sort((a, b) => Number(a.arrangement) - Number(b.arrangement))
+    //                 .forEach(async (artwork, index) => {
+    //                     artwork.arrangement = `${index + 1}`;
+    //                     console.log(year, artwork.arrangement);
+    //                     if (artwork.height === undefined) {
+    //                         artwork.height = 0;
+    //                     }
+    //                     if (artwork.width === undefined) {
+    //                         artwork.width = 0;
+    //                     }
+    //                     await artwork.save();
+    //                     count++;
+    //                 });
+    //                 console.log(year, 'updated count: ', count);
+    //         });
+
+
+    //         res.status(200).send({
+    //             message: "rearranged successfully",
+    //             count: artworks.length
+    //         });
+    //     } catch (err) {
+    //         let message = 'unknown error';
+    //         if (err instanceof Error) {
+    //             message = err.message;
+    //         }
+    //         res.status(400).send({ error: err, message });
+    //     }
+    // });
 }
