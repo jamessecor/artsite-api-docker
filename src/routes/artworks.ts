@@ -233,7 +233,6 @@ export const register = (app: express.Application) => {
                             },
                             { $inc: { arrangement: -1 } }
                         );
-                        console.log('updated', update);
                     } else {
                         // Moving up in the list (arrangement number decreases)
                         await Artwork.updateMany(
