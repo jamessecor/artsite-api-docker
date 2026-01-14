@@ -32,7 +32,7 @@ export interface IArtwork {
     taxStatus?: string;
     salePrice?: string;
     saleRevenue?: string;
-    isNFS?: string;
+    isNFS?: boolean;
     location?: string;
 }
 
@@ -68,7 +68,7 @@ const artworkSchema = new Schema<IArtwork, ArtworkModel, IArtworkMethods>({
     taxStatus: String,
     salePrice: String,
     saleRevenue: String,
-    isNFS: String,
+    isNFS: Boolean,
     location: String,
 });
 
