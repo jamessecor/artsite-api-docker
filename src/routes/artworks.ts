@@ -345,6 +345,47 @@ export const register = (app: express.Application) => {
     //     }
     // });
 
+    // Copy artwork endpoint
+    app.post('/api/artworks/:id/copy', async (req, res) => {
+        try {
+            await connect(process.env.DB_CONNECTIONSTRING_V2);
+
+            // Find the original artwork
+            const originalArtwork = await Artwork.findById(req.params.id);
+            if (!originalArtwork) {
+                res.status(404).send({ message: 'artwork not found' });
+                return;
+            }
+
+            // Create new artwork object excluding specified fields
+            const { _id, likes, isHomePage, arrangement, buyerID, buyerName, buyerEmail, buyerPhone, saleDate, taxStatus, salePrice, saleRevenue, ...artworkData } = originalArtwork.toObject();
+
+            // Create new artwork with modified title
+            const copiedArtwork = new Artwork({
+                ...artworkData,
+                title: `${artworkData.title} (Copy)`,
+                // Set explicit defaults for fields that should not be undefined
+                likes: [],
+                images: [],
+                isHomePage: false
+            });
+
+            // Save the copied artwork
+            const savedArtwork = await copiedArtwork.save();
+
+            res.status(200).send({
+                message: "artwork copied successfully",
+                artwork: savedArtwork
+            });
+        } catch (err) {
+            let message = 'unknown error';
+            if (err instanceof Error) {
+                message = err.message;
+            }
+            res.status(400).send({ error: err, message });
+        }
+    });
+
     app.delete('/api/artworks/:id', async (req, res) => {
         try {
             await connect(process.env.DB_CONNECTIONSTRING_V2);
