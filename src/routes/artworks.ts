@@ -358,7 +358,7 @@ export const register = (app: express.Application) => {
             }
 
             // Create new artwork object excluding specified fields
-            const { _id, likes, isHomePage, arrangement, buyerID, buyerName, buyerEmail, buyerPhone, saleDate, taxStatus, salePrice, saleRevenue, ...artworkData } = originalArtwork.toObject();
+            const { _id, likes, isHomePage, arrangement, buyerID, buyerName, buyerEmail, buyerPhone, saleDate, taxStatus, salePrice, saleRevenue, location, locations, ...artworkData } = originalArtwork.toObject();
 
             // Create new artwork with modified title
             const copiedArtwork = new Artwork({
@@ -377,6 +377,37 @@ export const register = (app: express.Application) => {
                 message: "artwork copied successfully",
                 artwork: savedArtwork
             });
+        } catch (err) {
+            let message = 'unknown error';
+            if (err instanceof Error) {
+                message = err.message;
+            }
+            res.status(400).send({ error: err, message });
+        }
+    });
+
+    app.post('/api/artworks/bulk-edit', async (req, res) => {
+        try {
+            await connect(process.env.DB_CONNECTIONSTRING_V2);
+            const ids = req.body.ids;
+            const newWidth = req.body.width ?? null;
+            const newHeight = req.body.height ?? null;
+            const newLocation = req.body.location ?? null;
+            const newPrice = req.body.price ?? null;
+
+            const updateFields: Record<string, any> = {};
+            if (newWidth !== null) updateFields.width = newWidth;
+            if (newHeight !== null) updateFields.height = newHeight;
+            if (newLocation !== null) updateFields.location = newLocation;
+            if (newPrice !== null) updateFields.price = newPrice;
+
+            const query = { _id: { $in: ids } };
+
+            if (Object.keys(updateFields).length > 0) {
+                await Artwork.updateMany(query, { $set: updateFields });
+            }
+
+            res.status(200).send("Successful bulk edit");
         } catch (err) {
             let message = 'unknown error';
             if (err instanceof Error) {
