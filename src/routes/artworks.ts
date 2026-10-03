@@ -225,13 +225,11 @@ export const register = (app: express.Application) => {
                         lastEntry.endDate = new Date();
                     }
 
-                    const locationData = {
+                    // add new history entry for the new location
+                    locationHistory.push({
                         startDate: new Date(),
                         location: newLocation
-                    };
-
-                    // add new history entry for the new location
-                    locationHistory.push(locationData);
+                    });
                     req.body.locationHistory = locationHistory;
                 }
             } else if (currentLocation) {
@@ -427,26 +425,49 @@ export const register = (app: express.Application) => {
 
     app.post('/api/artworks/bulk-edit', async (req, res) => {
         try {
-            await connect(process.env.DB_CONNECTIONSTRING_V2);
+            await connect(process.env.DB_CONNECTIONSTRING_V2 ?? '');
             const ids = req.body.ids;
             const newWidth = req.body.width ?? null;
             const newHeight = req.body.height ?? null;
             const newLocation = req.body.location ?? null;
             const newPrice = req.body.price ?? null;
 
-            const updateFields: Record<string, any> = {};
-            if (newWidth !== null) updateFields.width = newWidth;
-            if (newHeight !== null) updateFields.height = newHeight;
-            if (newLocation !== null) updateFields.location = newLocation;
-            if (newPrice !== null) updateFields.price = newPrice;
+            const staticFields: Record<string, any> = {};
+            if (newWidth !== null) staticFields.width = newWidth;
+            if (newHeight !== null) staticFields.height = newHeight;
+            if (newPrice !== null) staticFields.price = newPrice;
 
-            const query = { _id: { $in: ids } };
+            const artworks = await Artwork.find({ _id: { $in: ids } });
 
-            if (Object.keys(updateFields).length > 0) {
-                await Artwork.updateMany(query, { $set: updateFields });
-            }
+            await Promise.all(artworks.map(async (artwork) => {
+                const updateFields: Record<string, any> = { ...staticFields };
+                const currentLocation = artwork.location;
 
-            res.status(200).send("Successful bulk edit");
+                const locationHistory: Array<ILocationHistory> = [...(artwork.locationHistory ?? [])];
+                const lastEntry = locationHistory[locationHistory.length - 1];
+
+                if (newLocation !== null) {
+                    if (newLocation !== currentLocation) {
+                        if (lastEntry && !lastEntry.endDate) {
+                            lastEntry.endDate = new Date();
+                        }
+
+                        locationHistory.push({
+                            startDate: new Date(),
+                            location: newLocation
+                        });
+
+                        updateFields.location = newLocation;
+                        updateFields.locationHistory = locationHistory;
+                    }
+                }
+
+                if (Object.keys(updateFields).length > 0) {
+                    await Artwork.updateOne({ _id: artwork._id }, { $set: updateFields });
+                }
+            }));
+
+            res.status(200).send('Successful bulk edit');
         } catch (err) {
             let message = 'unknown error';
             if (err instanceof Error) {
