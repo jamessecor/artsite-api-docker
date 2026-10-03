@@ -2,7 +2,7 @@ import express from 'express';
 import Multer from 'multer';
 import { authenticateRequest } from '../models/authentication';
 import { uploadImages } from '../models/storage';
-import { Artwork } from '../models/artwork';
+import { Artwork, ILocationHistory } from '../models/artwork';
 import { connect } from 'mongoose';
 import { Document } from 'mongoose';
 import { IArtwork } from '../models/artwork';
@@ -38,7 +38,7 @@ export const register = (app: express.Application) => {
         if (isAuthenticated) {
             return artworkObj;
         }
-        const { buyerID, buyerName, buyerEmail, buyerPhone, location, ...publicInfo } = artworkObj;
+        const { buyerID, buyerName, buyerEmail, buyerPhone, location, locationHistory, ...publicInfo } = artworkObj;
         if (artworkObj.images.length > 1) {
             publicInfo.images = [artworkObj.images.sort((a, b) => a.size - b.size)[1]];
         }
@@ -202,6 +202,7 @@ export const register = (app: express.Application) => {
 
     app.put('/api/artworks/:id', multer.single('file'), async (req, res, next) => {
         try {
+            await connect(process.env.DB_CONNECTIONSTRING_V2);
             const currentArtwork = await Artwork.findById(req.params.id);
             if (!currentArtwork) {
                 res.status(404).send({ message: 'artwork not found' });
@@ -211,13 +212,43 @@ export const register = (app: express.Application) => {
             const currentArrangement = currentArtwork?.arrangement || 0;
             const newArrangement = req.body.arrangement;
 
+            const currentLocation = currentArtwork.location;
+            const newLocation = req.body.location;
+
+            const locationHistory: Array<ILocationHistory> = [...(currentArtwork.locationHistory ?? [])];
+            const lastEntry = locationHistory[locationHistory.length - 1];
+
+            if (newLocation) {
+                if (newLocation !== currentLocation) {
+                    // close out the current entry, if one exists and is still open
+                    if (lastEntry && !lastEntry.endDate) {
+                        lastEntry.endDate = new Date();
+                    }
+
+                    const locationData = {
+                        startDate: new Date(),
+                        location: newLocation
+                    };
+
+                    // add new history entry for the new location
+                    locationHistory.push(locationData);
+                    req.body.locationHistory = locationHistory;
+                }
+            } else if (currentLocation) {
+                // location was cleared: just close out the current entry
+                if (lastEntry && !lastEntry.endDate) {
+                    lastEntry.endDate = new Date();
+                }
+
+                req.body.locationHistory = locationHistory;
+            }
+
             if (req.file) {
                 const { buffer } = req.file;
                 const images = await uploadImages(buffer, req.body.title);
                 req.body.images = images;
             }
 
-            await connect(process.env.DB_CONNECTIONSTRING_V2);
             const update = await Artwork.updateOne({ _id: req.params.id }, req.body);
             if (update) {
                 // Only reorder if the arrangement has changed
@@ -300,27 +331,35 @@ export const register = (app: express.Application) => {
         }
     });
 
-    // Delete all likes
-    // app.delete('/api/artworks/likes', async (req, res) => {
-    //     try {
-    //         const client = new MongoClient(process.env.DB_CONNECTIONSTRING ?? '');
-    //         await client.connect();
-    //         const db = client.db(process.env.DB_NAME);
-    //         const collection = db.collection(artworksCollection);
+    app.post('/api/artworks/seed-location-history', async (req, res) => {
+        try {
+            await connect(process.env.DB_CONNECTIONSTRING_V2);
 
-    //         const removeLikesResult = collection.updateMany({ likes: { $exists: true } }, { $set: { likes: undefined } });
-    //         if (removeLikesResult) {
-    //             res.status(200).send({ message: "deleted successfully" });
-    //         }
-    //     } catch (err) {
-    //         let message = 'unknown error';
-    //         if (err instanceof Error) {
-    //             message = err.message;
-    //         }
-    //         res.status(400).send({ error: err, message });
-    //     }
-    // });
+            const query = { location: { $ne: null } };
 
+            const result = await Artwork.updateMany(query, [
+                {
+                    $set: {
+                        locationHistory: [
+                            {
+                                startDate: '$$NOW',
+                                endDate: null,
+                                location: '$location'
+                            }
+                        ]
+                    }
+                }
+            ]);
+
+            res.status(200).send(result);
+        } catch (err) {
+            let message = 'unknown error';
+            if (err instanceof Error) {
+                message = err.message;
+            }
+            res.status(400).send({ error: err, message });
+        }
+    });
     // // Delete artworks by query
     // app.delete('/api/artworks', async (req, res) => {
     //     try {
@@ -358,7 +397,7 @@ export const register = (app: express.Application) => {
             }
 
             // Create new artwork object excluding specified fields
-            const { _id, likes, isHomePage, arrangement, buyerID, buyerName, buyerEmail, buyerPhone, saleDate, taxStatus, salePrice, saleRevenue, location, locations, ...artworkData } = originalArtwork.toObject();
+            const { _id, likes, isHomePage, arrangement, buyerID, buyerName, buyerEmail, buyerPhone, saleDate, taxStatus, salePrice, saleRevenue, location, locationHistory, ...artworkData } = originalArtwork.toObject();
 
             // Create new artwork with modified title
             const copiedArtwork = new Artwork({

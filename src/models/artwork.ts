@@ -12,9 +12,9 @@ export interface IImage {
     url: string;
 }
 
-export interface ILocation {
-    startDate: string;
-    endDate: string;
+export interface ILocationHistory {
+    startDate: Date;
+    endDate?: Date;
     location: string;
 }
 
@@ -40,7 +40,7 @@ export interface IArtwork {
     saleRevenue?: string;
     isNFS?: boolean;
     location?: string;
-    locations?: Array<ILocation>;
+    locationHistory?: Array<ILocationHistory>;
 }
 
 interface IArtworkMethods {
@@ -77,7 +77,7 @@ const artworkSchema = new Schema<IArtwork, ArtworkModel, IArtworkMethods>({
     saleRevenue: String,
     isNFS: Boolean,
     location: String,
-    locations: [{
+    locationHistory: [{
         startDate: Date,
         endDate: Date,
         location: String
