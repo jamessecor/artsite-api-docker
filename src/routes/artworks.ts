@@ -467,7 +467,8 @@ export const register = (app: express.Application) => {
                 }
             }));
 
-            res.status(200).send('Successful bulk edit');
+            const message = `Edited ${ids.length} artwork${ids.length !== 1 ? 's' : ''}`;
+            res.status(200).send({ message: message });
         } catch (err) {
             let message = 'unknown error';
             if (err instanceof Error) {
