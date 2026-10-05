@@ -338,7 +338,7 @@ export const register = (app: express.Application) => {
                     $set: {
                         locationHistory: [
                             {
-                                startDate: '$$NOW',
+                                startDate: new Date('2026-09-01'),
                                 endDate: null,
                                 location: '$location'
                             }
@@ -428,6 +428,7 @@ export const register = (app: express.Application) => {
             const newWidth = req.body.width ?? null;
             const newHeight = req.body.height ?? null;
             const newLocation = req.body.location ?? null;
+            const newLocationStartDate = new Date(req.body.locationStartDate) ?? new Date();
             const newPrice = req.body.price ?? null;
 
             const staticFields: Record<string, any> = {};
@@ -447,11 +448,11 @@ export const register = (app: express.Application) => {
                 if (newLocation !== null) {
                     if (newLocation !== currentLocation) {
                         if (lastEntry && !lastEntry.endDate) {
-                            lastEntry.endDate = new Date();
+                            lastEntry.endDate = newLocationStartDate;
                         }
 
                         locationHistory.push({
-                            startDate: new Date(),
+                            startDate: newLocationStartDate,
                             location: newLocation
                         });
 
