@@ -3,7 +3,7 @@ import Multer from 'multer';
 import { authenticateRequest } from '../models/authentication';
 import { uploadImages } from '../models/storage';
 import { Artwork, ILocationHistory } from '../models/artwork';
-import { connect } from 'mongoose';
+import { connect, FilterQuery } from 'mongoose';
 import { Document } from 'mongoose';
 import { IArtwork } from '../models/artwork';
 
@@ -332,9 +332,7 @@ export const register = (app: express.Application) => {
     app.post('/api/artworks/seed-location-history', async (req, res) => {
         try {
             await connect(process.env.DB_CONNECTIONSTRING_V2);
-
-            const query = { location: { $ne: null } };
-
+            const query: FilterQuery<IArtwork> = { location: { $ne: null } };
             const result = await Artwork.updateMany(query, [
                 {
                     $set: {
