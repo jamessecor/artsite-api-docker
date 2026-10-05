@@ -54,7 +54,7 @@ export const register = (app: express.Application) => {
             const includeGroupings = req.query.includeGroupings;
             const isAuthenticated = authenticateRequest(req.headers.authorization ?? '');
 
-            await connect(process.env.DB_CONNECTIONSTRING_V2);
+            await connectToDb();
 
             const artworksQuery = Artwork.find();
             if (year) {
@@ -115,7 +115,7 @@ export const register = (app: express.Application) => {
             const endDate = req.query.end ?? new Date();
             const isAuthenticated = authenticateRequest(req.headers.authorization ?? '');
 
-            await connect(process.env.DB_CONNECTIONSTRING_V2);
+            await connectToDb();
 
             const artworksQuery = Artwork
                 .find({
@@ -148,7 +148,7 @@ export const register = (app: express.Application) => {
 
     app.get('/api/artworks/meta-data', async (req, res) => {
         try {
-            await connect(process.env.DB_CONNECTIONSTRING_V2);
+            await connectToDb();
 
             const artworks = await Artwork.find().sort({ year: 'desc' }).select('grouping year');
             const response = {
@@ -180,7 +180,7 @@ export const register = (app: express.Application) => {
             const images = await uploadImages(buffer, newArtwork.title);
             newArtwork.images = images;
 
-            await connect(process.env.DB_CONNECTIONSTRING_V2);
+            await connectToDb();
             const update = await newArtwork.save();
 
             if (update) {
@@ -202,7 +202,7 @@ export const register = (app: express.Application) => {
 
     app.put('/api/artworks/:id', multer.single('file'), async (req, res, next) => {
         try {
-            await connect(process.env.DB_CONNECTIONSTRING_V2);
+            await connectToDb();
             const currentArtwork = await Artwork.findById(req.params.id);
             if (!currentArtwork) {
                 res.status(404).send({ message: 'artwork not found' });
@@ -302,9 +302,9 @@ export const register = (app: express.Application) => {
         }
         // Update artwork likes
         try {
-            await connect(process.env.DB_CONNECTIONSTRING_V2);
+            await connectToDb();
             const artwork = await Artwork.findById(req.params.id);
-            const likes = artwork.likes ?? [];
+            const likes = artwork?.likes ?? [];
             const like = {
                 timestamp: req.body.timestamp,
                 amount: req.body.amount
@@ -314,7 +314,7 @@ export const register = (app: express.Application) => {
             const update = await Artwork.updateOne({ _id: req.params.id }, { likes: updatedLikes });
             if (update) {
                 res.status(200).send({
-                    message: `updated ${artwork.title} successfully`,
+                    message: `updated ${artwork?.title} successfully`,
                     artwork: artwork
                 });
             } else {
@@ -331,7 +331,7 @@ export const register = (app: express.Application) => {
 
     app.post('/api/artworks/seed-location-history', async (req, res) => {
         try {
-            await connect(process.env.DB_CONNECTIONSTRING_V2);
+            await connectToDb();
             const query: FilterQuery<IArtwork> = { location: { $ne: null } };
             const result = await Artwork.updateMany(query, [
                 {
@@ -383,7 +383,7 @@ export const register = (app: express.Application) => {
     // Copy artwork endpoint
     app.post('/api/artworks/:id/copy', async (req, res) => {
         try {
-            await connect(process.env.DB_CONNECTIONSTRING_V2);
+            await connectToDb();
 
             // Find the original artwork
             const originalArtwork = await Artwork.findById(req.params.id);
@@ -478,7 +478,7 @@ export const register = (app: express.Application) => {
 
     app.delete('/api/artworks/:id', async (req, res) => {
         try {
-            await connect(process.env.DB_CONNECTIONSTRING_V2);
+            await connectToDb();
             const remove = await Artwork.deleteOne({ _id: req.params.id });
 
             if (remove) {
@@ -498,10 +498,14 @@ export const register = (app: express.Application) => {
         }
     });
 
+    const connectToDb = async () => {
+        await connect(process.env.DB_CONNECTIONSTRING_V2 ?? '');
+    };
+
     // app.get('/api/artworks/rearrange', async (req, res) => {
     //     try {
     //         console.log('rearranging artworks');
-    //         await connect(process.env.DB_CONNECTIONSTRING_V2);
+    //         await connectToDb();
     //         const artworks = await Artwork.find();
     //         const years = new Set(artworks.map((artwork) => artwork.year));
     //         years.forEach(async (year) => {
